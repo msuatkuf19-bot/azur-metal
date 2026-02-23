@@ -1,0 +1,457 @@
+// ========================================
+// Prisma Schema - Turso (libSQL)
+// ========================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// ADMIN USER
+// ========================================
+model AdminUser {
+  id           String   @id @default(uuid())
+  kullaniciAdi String   @unique
+  sifre        String
+  adSoyad      String
+  email        String?  @unique
+  aktif        Boolean  @default(true)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  auditLogs    AuditLog[]
+}
+
+// ========================================
+// İŞ EMRİ
+// ========================================
+model BusinessJob {
+  id             String   @id @default(uuid())
+  referansKodu   String   @unique
+  
+  // Müşteri Bilgileri
+  musteriAdi     String
+  musteriSoyadi  String?
+  firmaAdi       String?
+  tcKimlikNo     String?
+  vergiNo        String?
+  telefon        String
+  email          String?
+  
+  // İş Detayları
+  durum          String   @default("Yeni")
+  oncelik        String   @default("Normal")
+  etiketler      String?  // JSON: ["etiket1","etiket2"]
+  notlar         String?
+  
+  // Adres Bilgileri
+  il             String?
+  ilce           String?
+  adres          String?
+  faturaUnvani   String?
+  teslimatAdresi String?
+  
+  // Maliyet Toplamları (otomatik güncellenir)
+  laborCostTotal    Float  @default(0)
+  materialCostTotal Float  @default(0)
+  
+  olusturmaTarihi DateTime  @default(now())
+  guncellemeTarihi DateTime @updatedAt
+  kapanisTarihi   DateTime?
+
+  // Relations
+  offers           Offer[]
+  contracts        Contract[]
+  payments         Payment[]
+  paymentPlans     PaymentPlan[]
+  orders           Order[]
+  workLogs         WorkLog[]
+  files            FileAsset[]
+  auditLogs        AuditLog[]
+  workEntries      WorkEntry[]
+  materialPurchases MaterialPurchase[]
+
+  @@index([durum])
+  @@index([oncelik])
+  @@index([olusturmaTarihi])
+}
+
+// ========================================
+// TEKLİF
+// ========================================
+model Offer {
+  id           String      @id @default(uuid())
+  jobId        String
+  job          BusinessJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  teklifNo     String      @unique
+  baslik       String
+  paraBirimi   String      @default("TRY")
+  durum        String      @default("Taslak")
+  
+  araToplam    Float       @default(0)
+  kdvToplam    Float       @default(0)
+  genelToplam  Float       @default(0)
+  
+  gecerlilikTarihi DateTime?
+  notlar           String?
+  pdfUrl           String?
+  
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  
+  items        OfferItem[]
+
+  @@index([jobId])
+  @@index([durum])
+}
+
+model OfferItem {
+  id          String @id @default(uuid())
+  offerId     String
+  offer       Offer  @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  
+  urunAdi     String
+  aciklama    String?
+  miktar      Float  @default(1)
+  birim       String @default("adet")
+  birimFiyat  Float  @default(0)
+  kdvOrani    Float  @default(20)
+  tutar       Float  @default(0)
+
+  @@index([offerId])
+}
+
+// ========================================
+// SÖZLEŞME
+// ========================================
+model Contract {
+  id              String      @id @default(uuid())
+  jobId           String
+  job             BusinessJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  sozlesmeNo      String      @unique
+  baslik          String
+  aciklama        String?
+  durum           String      @default("Taslak")
+  
+  toplamTutar     Float       @default(0)
+  
+  baslangicTarihi DateTime?
+  bitisTarihi     DateTime?
+  imzaTarihi      DateTime?
+  
+  pdfUrl          String?
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([jobId])
+  @@index([durum])
+}
+
+// ========================================
+// ÖDEME
+// ========================================
+model Payment {
+  id           String      @id @default(uuid())
+  jobId        String
+  job          BusinessJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  tip          String      // "Tahsilat" | "Gider"
+  taraf        String      // "Musteri" | "Usta" | "Tedarikci" | "Diger"
+  tutar        Float
+  tarih        DateTime
+  odemeYontemi String
+  aciklama     String?
+  
+  masterId     String?
+  master       Master?     @relation(fields: [masterId], references: [id], onDelete: SetNull)
+  
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([jobId])
+  @@index([tip])
+  @@index([tarih])
+}
+
+// ========================================
+// ÖDEME PLANI
+// ========================================
+model PaymentPlan {
+  id           String      @id @default(uuid())
+  jobId        String
+  job          BusinessJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  vadeTarihi   DateTime
+  tutar        Float
+  durum        String      @default("Bekliyor")
+  aciklama     String?
+  
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([jobId])
+  @@index([vadeTarihi])
+  @@index([durum])
+}
+
+// ========================================
+// SİPARİŞ
+// ========================================
+model Order {
+  id            String      @id @default(uuid())
+  jobId         String
+  job           BusinessJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  siparisNo     String      @unique
+  tedarikci     String
+  durum         String      @default("Taslak")
+  
+  araToplam     Float       @default(0)
+  kdvToplam     Float       @default(0)
+  genelToplam   Float       @default(0)
+  
+  siparisTarihi DateTime?
+  teslimTarihi  DateTime?
+  notlar        String?
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  items         OrderItem[]
+
+  @@index([jobId])
+  @@index([durum])
+}
+
+model OrderItem {
+  id          String @id @default(uuid())
+  orderId     String
+  order       Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  urunAdi     String
+  miktar      Float  @default(1)
+  birim       String @default("adet")
+  birimFiyat  Float  @default(0)
+  tutar       Float  @default(0)
+
+  @@index([orderId])
+}
+
+// ========================================
+// USTA (Backward compat: Master model kept, Worker is new)
+// ========================================
+model Master {
+  id           String   @id @default(uuid())
+  adSoyad      String
+  telefon      String
+  uzmanlik     String?
+  saatlikUcret Float    @default(0)
+  notlar       String?
+  aktif        Boolean  @default(true)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  workLogs     WorkLog[]
+  payments     Payment[]
+
+  @@index([aktif])
+}
+
+// ========================================
+// ÇALIŞANLAR (USTA/İŞÇİ) - YENİ
+// ========================================
+model Worker {
+  id                String   @id @default(uuid())
+  fullName          String
+  phone             String?
+  roleType          String   @default("USTA")  // "USTA" | "ISCI"
+  hourlyRateDefault Float    @default(0)
+  notes             String?
+  isActive          Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  workEntries       WorkEntry[]
+
+  @@index([isActive])
+  @@index([roleType])
+}
+
+// ========================================
+// TOPTANCILAR - YENİ
+// ========================================
+model Supplier {
+  id           String   @id @default(uuid())
+  name         String
+  contactName  String?
+  phone        String?
+  email        String?
+  address      String?
+  taxNo        String?
+  notes        String?
+  isActive     Boolean  @default(true)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  materialPurchases MaterialPurchase[]
+
+  @@index([isActive])
+}
+
+// ========================================
+// MALZEME KATALOĞU - YENİ
+// ========================================
+model Material {
+  id             String   @id @default(uuid())
+  name           String
+  unit           String   @default("adet") // adet, kg, mt, m2, litre, etc.
+  defaultVatRate Float    @default(20)
+  isActive       Boolean  @default(true)
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  purchases      MaterialPurchase[]
+
+  @@index([isActive])
+}
+
+// ========================================
+// İŞÇİLİK KAYITLARI - YENİ
+// ========================================
+model WorkEntry {
+  id             String      @id @default(uuid())
+  jobId          String
+  job            BusinessJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  workerId       String
+  worker         Worker      @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  
+  date           DateTime    @default(now())
+  hours          Float       @default(0)    // 0.5 destekle
+  hourlyRate     Float       @default(0)
+  description    String?
+  totalAmount    Float       @default(0)    // hours * hourlyRate
+  
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([jobId])
+  @@index([workerId])
+  @@index([date])
+}
+
+// ========================================
+// MALZEME ALIMLARI - YENİ
+// ========================================
+model MaterialPurchase {
+  id             String      @id @default(uuid())
+  jobId          String
+  job            BusinessJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  supplierId     String
+  supplier       Supplier    @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  
+  materialId     String?
+  material       Material?   @relation(fields: [materialId], references: [id], onDelete: SetNull)
+  
+  materialName   String?     // Serbest malzeme adı (materialId yoksa)
+  quantity       Float       @default(1)
+  unit           String      @default("adet")
+  unitPrice      Float       @default(0)
+  vatRate        Float?      // Opsiyonel KDV
+  totalAmount    Float       @default(0)
+  note           String?
+  purchaseDate   DateTime    @default(now())
+  
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([jobId])
+  @@index([supplierId])
+  @@index([materialId])
+  @@index([purchaseDate])
+}
+
+// ========================================
+// ÇALIŞMA KAYDI (ESKİ - BACKWARD COMPAT)
+// ========================================
+model WorkLog {
+  id             String      @id @default(uuid())
+  jobId          String
+  job            BusinessJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  masterId       String
+  master         Master      @relation(fields: [masterId], references: [id], onDelete: Cascade)
+  
+  tarih          DateTime
+  toplamSaat     Float
+  birimUcret     Float       @default(0)
+  toplamTutar    Float       @default(0)
+  aciklama       String?
+  
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([jobId])
+  @@index([masterId])
+  @@index([tarih])
+}
+
+// ========================================
+// DOSYA
+// ========================================
+model FileAsset {
+  id           String      @id @default(uuid())
+  jobId        String
+  job          BusinessJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  dosyaAdi     String
+  dosyaYolu    String
+  dosyaBoyutu  Int
+  mimeType     String
+  kategori     String
+  
+  createdAt    DateTime    @default(now())
+
+  @@index([jobId])
+  @@index([kategori])
+}
+
+// ========================================
+// AUDİT LOG
+// ========================================
+model AuditLog {
+  id         String      @id @default(uuid())
+  userId     String
+  user       AdminUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  jobId      String?
+  job        BusinessJob? @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  action     String
+  entityType String?
+  entityId   String?
+  entity     String?      // Yeni: Entity adı (Worker, Supplier, etc.)
+  details    String?
+  
+  createdAt  DateTime    @default(now())
+
+  @@index([userId])
+  @@index([jobId])
+  @@index([createdAt])
+  @@index([entityType])
+}
