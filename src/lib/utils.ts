@@ -1,5 +1,26 @@
 import { format, parseISO } from 'date-fns';
 
+// Etiketleri güvenli şekilde parse et
+export function parseEtiketler(etiketler: string | string[] | null | undefined): string[] {
+  if (!etiketler) return [];
+  if (Array.isArray(etiketler)) return etiketler;
+  if (typeof etiketler !== 'string') return [];
+  
+  // JSON array olup olmadığını kontrol et
+  const trimmed = etiketler.trim();
+  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      return Array.isArray(parsed) ? parsed : [etiketler];
+    } catch {
+      return [etiketler];
+    }
+  }
+  
+  // Düz string ise array olarak döndür
+  return etiketler ? [etiketler] : [];
+}
+
 // Tarih formatlama
 export function formatDate(date: Date | string, formatStr: string = 'dd.MM.yyyy'): string {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;

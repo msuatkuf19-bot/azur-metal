@@ -2,7 +2,7 @@
 
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { formatDate, formatPhone } from '@/lib/utils';
+import { formatDate, formatPhone, parseEtiketler } from '@/lib/utils';
 
 interface GeneralTabProps {
   project: any;
@@ -10,10 +10,8 @@ interface GeneralTabProps {
 }
 
 export default function GeneralTab({ project, metrics }: GeneralTabProps) {
-  // Parse etiketler
-  const etiketler = typeof project.etiketler === 'string'
-    ? JSON.parse(project.etiketler || '[]')
-    : (project.etiketler || []);
+  // Parse etiketler güvenli şekilde
+  const etiketler = parseEtiketler(project.etiketler);
 
   return (
     <div className="space-y-6">

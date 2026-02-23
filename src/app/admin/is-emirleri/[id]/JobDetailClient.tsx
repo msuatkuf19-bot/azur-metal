@@ -12,7 +12,7 @@ import {
   JOB_PRIORITY_LABELS,
   JOB_PRIORITY_COLORS,
 } from '@/lib/constants';
-import { formatCurrency, formatDate, formatDateTime, formatPhone } from '@/lib/utils';
+import { formatCurrency, formatDate, formatDateTime, formatPhone, parseEtiketler } from '@/lib/utils';
 import { updateJobStatus, deleteBusinessJob } from '@/app/actions/business-jobs';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -34,10 +34,8 @@ export default function JobDetailClient({ data }: any) {
   const { job, financials } = data;
   const [isStatusChanging, setIsStatusChanging] = useState(false);
 
-  // Parse etiketler if it's a JSON string
-  const etiketler = typeof job.etiketler === 'string' 
-    ? JSON.parse(job.etiketler || '[]') 
-    : (job.etiketler || []);
+  // Parse etiketler güvenli şekilde
+  const etiketler = parseEtiketler(job.etiketler);
 
   const handleStatusChange = async (newStatus: string) => {
     if (confirm(`Durum "${JOB_STATUS_LABELS[newStatus as keyof typeof JOB_STATUS_LABELS]}" olarak değiştirilsin mi?`)) {

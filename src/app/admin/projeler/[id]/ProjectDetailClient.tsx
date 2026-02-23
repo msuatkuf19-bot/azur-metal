@@ -15,7 +15,7 @@ import {
   JOB_PRIORITY_COLORS,
   PROFITABILITY_COLORS,
 } from '@/lib/constants';
-import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
+import { formatCurrency, formatDate, formatDateTime, parseEtiketler } from '@/lib/utils';
 import { updateJobStatus, deleteBusinessJob } from '@/app/actions/business-jobs';
 import toast from 'react-hot-toast';
 
@@ -50,10 +50,8 @@ export default function ProjectDetailClient({ data, formData }: ProjectDetailCli
   const [isStatusChanging, setIsStatusChanging] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState<string | null>(null);
 
-  // Parse etiketler
-  const etiketler = typeof project.etiketler === 'string'
-    ? JSON.parse(project.etiketler || '[]')
-    : (project.etiketler || []);
+  // Parse etiketler güvenli şekilde
+  const etiketler = parseEtiketler(project.etiketler);
 
   const handleStatusChange = async (newStatus: string) => {
     if (confirm(`Durum "${JOB_STATUS_LABELS[newStatus as keyof typeof JOB_STATUS_LABELS]}" olarak değiştirilsin mi?`)) {
