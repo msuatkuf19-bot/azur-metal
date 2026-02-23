@@ -31,14 +31,15 @@ export default function NewProjectPage() {
     const formData = new FormData(e.currentTarget);
     
     // Form verilerini action'ın beklediği formata dönüştür
+    // null değerleri undefined'a çevir
     const data = {
-      musteriAdi: formData.get('customerName') as string,
+      musteriAdi: formData.get('customerName') as string || '',
       telefon: formData.get('customerPhone') as string || '-',
-      firmaAdi: formData.get('title') as string,
-      adres: formData.get('customerAddress') as string,
+      firmaAdi: (formData.get('title') as string) || undefined,
+      adres: (formData.get('customerAddress') as string) || undefined,
       oncelik: formData.get('priority') as string || 'Normal',
-      etiketler: formData.get('jobType') as string,
-      notlar: formData.get('notes') as string,
+      etiketler: (formData.get('jobType') as string) || undefined,
+      notlar: (formData.get('notes') as string) || undefined,
     };
     
     try {

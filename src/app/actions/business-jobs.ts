@@ -28,10 +28,22 @@ async function createAuditLog(
   });
 }
 
+// null değerleri undefined'a çevir (Prisma için)
+function cleanNullValues(obj: any) {
+  const cleaned: any = {};
+  for (const key in obj) {
+    if (obj[key] !== null) {
+      cleaned[key] = obj[key];
+    }
+  }
+  return cleaned;
+}
+
 // İş emri oluştur
 export async function createBusinessJob(data: any) {
   try {
     const validated = businessJobSchema.parse(data);
+    const cleanedData = cleanNullValues(validated);
 
     // Referans kodu oluştur
     const year = new Date().getFullYear();
@@ -40,14 +52,16 @@ export async function createBusinessJob(data: any) {
 
     const job = await prisma.businessJob.create({
       data: {
-        ...validated,
+        ...cleanedData,
         referansKodu,
+        guncellemeTarihi: new Date().toISOString(),
       },
     });
 
     await createAuditLog('CREATE', 'BusinessJob', job.id, `Yeni iş emri: ${job.firmaAdi || job.musteriAdi}`);
 
     revalidatePath('/admin/is-emirleri');
+    revalidatePath('/admin/projeler');
     return { success: true, data: job };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -58,16 +72,22 @@ export async function createBusinessJob(data: any) {
 export async function updateBusinessJob(id: string, data: any) {
   try {
     const validated = businessJobSchema.parse(data);
+    const cleanedData = cleanNullValues(validated);
 
     const job = await prisma.businessJob.update({
       where: { id },
-      data: validated,
+      data: {
+        ...cleanedData,
+        guncellemeTarihi: new Date().toISOString(),
+      },
     });
 
     await createAuditLog('UPDATE', 'BusinessJob', job.id, `İş emri güncellendi: ${job.firmaAdi || job.musteriAdi}`);
 
     revalidatePath('/admin/is-emirleri');
+    revalidatePath('/admin/projeler');
     revalidatePath(`/admin/is-emirleri/${id}`);
+    revalidatePath(`/admin/projeler/${id}`);
     return { success: true, data: job };
   } catch (error: any) {
     return { success: false, error: error.message };

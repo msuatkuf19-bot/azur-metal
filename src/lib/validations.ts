@@ -3,21 +3,21 @@ import { z } from 'zod';
 // İş Emri Validasyon
 export const businessJobSchema = z.object({
   musteriAdi: z.string().min(1, 'Müşteri adı gerekli'),
-  musteriSoyadi: z.string().optional(),
-  firmaAdi: z.string().optional(),
-  tcKimlikNo: z.string().length(11, 'TC 11 haneli olmalı').optional().or(z.literal('')),
-  vergiNo: z.string().optional(),
+  musteriSoyadi: z.string().nullish(),
+  firmaAdi: z.string().nullish(),
+  tcKimlikNo: z.string().length(11, 'TC 11 haneli olmalı').nullish().or(z.literal('')),
+  vergiNo: z.string().nullish(),
   telefon: z.string().min(1, 'Telefon gerekli'),
-  email: z.string().email('Geçerli email adresi giriniz').optional().or(z.literal('')),
+  email: z.string().email('Geçerli email adresi giriniz').nullish().or(z.literal('')),
   durum: z.string().default('Yeni'),
   oncelik: z.string().default('Normal'),
-  etiketler: z.string().optional(), // JSON string
-  notlar: z.string().optional(),
-  il: z.string().optional(),
-  ilce: z.string().optional(),
-  adres: z.string().optional(),
-  faturaUnvani: z.string().optional(),
-  teslimatAdresi: z.string().optional(),
+  etiketler: z.string().nullish(), // JSON string
+  notlar: z.string().nullish(),
+  il: z.string().nullish(),
+  ilce: z.string().nullish(),
+  adres: z.string().nullish(),
+  faturaUnvani: z.string().nullish(),
+  teslimatAdresi: z.string().nullish(),
 });
 
 // Teklif Validasyon
