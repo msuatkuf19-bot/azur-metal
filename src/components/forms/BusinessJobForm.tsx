@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, TextArea, Select } from '@/components/ui/Input';
 import { createBusinessJob, updateBusinessJob } from '@/app/actions/business-jobs';
 import { JOB_STATUS_LABELS, JOB_PRIORITY_LABELS } from '@/lib/constants';
+import { parseEtiketler } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface BusinessJobFormProps {
@@ -17,17 +18,6 @@ interface BusinessJobFormProps {
 export default function BusinessJobForm({ initialData, jobId }: BusinessJobFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // initialData'dan etiketleri parse et
-  const parseEtiketler = (data: any) => {
-    if (!data?.etiketler) return [];
-    if (Array.isArray(data.etiketler)) return data.etiketler;
-    try {
-      return JSON.parse(data.etiketler);
-    } catch {
-      return [];
-    }
-  };
 
   const [formData, setFormData] = useState({
     firmaAdi: initialData?.firmaAdi || '',
@@ -35,7 +25,7 @@ export default function BusinessJobForm({ initialData, jobId }: BusinessJobFormP
     musteriSoyadi: initialData?.musteriSoyadi || '',
     durum: initialData?.durum || 'Yeni',
     oncelik: initialData?.oncelik || 'Normal',
-    etiketler: parseEtiketler(initialData),
+    etiketler: parseEtiketler(initialData?.etiketler),
     notlar: initialData?.notlar || '',
     telefon: initialData?.telefon || '',
     email: initialData?.email || '',
