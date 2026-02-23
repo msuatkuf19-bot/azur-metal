@@ -14,8 +14,9 @@ async function getJob(id: string) {
   return job;
 }
 
-export default async function EditJobPage({ params }: { params: { id: string } }) {
-  const job = await getJob(params.id);
+export default async function EditJobPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const job = await getJob(id);
 
   // Etiketleri array olarak hazırla
   const initialData = {

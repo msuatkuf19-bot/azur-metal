@@ -94,8 +94,9 @@ async function getJobDetails(id: string) {
   };
 }
 
-export default async function JobDetailPage({ params }: { params: { id: string } }) {
-  const data = await getJobDetails(params.id);
+export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const data = await getJobDetails(id);
 
   return <JobDetailClient data={data} />;
 }

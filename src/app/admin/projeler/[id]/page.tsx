@@ -198,9 +198,10 @@ async function getFormData() {
   return { workers, suppliers, materials };
 }
 
-export default async function ProjectDetailPage({ params }: { params: { id: string } }) {
+export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const [data, formData] = await Promise.all([
-    getProjectDetails(params.id),
+    getProjectDetails(id),
     getFormData(),
   ]);
 

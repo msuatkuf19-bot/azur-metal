@@ -158,8 +158,9 @@ async function getMasterDetails(id: string) {
   };
 }
 
-export default async function MasterDetailPage({ params }: { params: { id: string } }) {
-  const data = await getMasterDetails(params.id);
+export default async function MasterDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const data = await getMasterDetails(id);
 
   return <MasterDetailClient data={data} />;
 }
