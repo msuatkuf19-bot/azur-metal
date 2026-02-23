@@ -30,8 +30,19 @@ export default function NewProjectPage() {
 
     const formData = new FormData(e.currentTarget);
     
+    // Form verilerini action'ın beklediği formata dönüştür
+    const data = {
+      musteriAdi: formData.get('customerName') as string,
+      telefon: formData.get('customerPhone') as string || '-',
+      firmaAdi: formData.get('title') as string,
+      adres: formData.get('customerAddress') as string,
+      oncelik: formData.get('priority') as string || 'Normal',
+      etiketler: formData.get('jobType') as string,
+      notlar: formData.get('notes') as string,
+    };
+    
     try {
-      const result = await createBusinessJob(formData);
+      const result = await createBusinessJob(data);
       
       if (result.success && result.data) {
         router.push(`/admin/projeler/${result.data.id}`);
@@ -151,10 +162,11 @@ export default function NewProjectPage() {
               
               <div>
                 <Input
-                  label="Telefon"
+                  label="Telefon *"
                   name="customerPhone"
                   type="tel"
                   placeholder="05XX XXX XX XX"
+                  required
                 />
               </div>
               
