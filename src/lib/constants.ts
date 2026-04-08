@@ -208,3 +208,25 @@ export const EXPENSE_CATEGORY_OPTIONS = Object.entries(EXPENSE_CATEGORY_LABELS).
   value,
   label,
 }));
+
+// ========================================
+// YOKLAMA SABİTLERİ
+// ========================================
+export const ATTENDANCE_TYPE_LABELS = {
+  FULL_DAY: 'Tam Gün',
+  HALF_DAY: 'Yarım Gün',
+} as const;
+
+export const ATTENDANCE_TYPE_COLORS = {
+  FULL_DAY: 'bg-emerald-100 text-emerald-800',
+  HALF_DAY: 'bg-amber-100 text-amber-800',
+} as const;
+
+// ========================================
+// PERSONEL BORÇ DURUMU SABİTLERİ
+// ========================================
+export const WORKER_BALANCE_STATUS = {
+  DEBT: { label: 'Borçlu', color: 'text-red-600', bg: 'bg-red-100', border: 'border-red-500' },
+  CLEAR: { label: 'Kapandı', color: 'text-emerald-600', bg: 'bg-emerald-100', border: 'border-emerald-500' },
+  ADVANCE: { label: 'Avans Aldı', color: 'text-blue-600', bg: 'bg-blue-100', border: 'border-blue-500' },
+} as const;

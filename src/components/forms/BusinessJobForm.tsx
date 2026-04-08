@@ -23,6 +23,7 @@ export default function BusinessJobForm({ initialData, jobId }: BusinessJobFormP
     firmaAdi: initialData?.firmaAdi || '',
     musteriAdi: initialData?.musteriAdi || '',
     musteriSoyadi: initialData?.musteriSoyadi || '',
+    isTipi: initialData?.isTipi || '',
     durum: initialData?.durum || 'Yeni',
     oncelik: initialData?.oncelik || 'Normal',
     etiketler: parseEtiketler(initialData?.etiketler),
@@ -107,6 +108,13 @@ export default function BusinessJobForm({ initialData, jobId }: BusinessJobFormP
                     onChange={handleChange}
                   />
                 </div>
+                <Input
+                  label="İş Tipi"
+                  name="isTipi"
+                  value={formData.isTipi}
+                  onChange={handleChange}
+                  placeholder="Ör: Korkuluk, Merdiven, Çatı, Kapı..."
+                />
                 <Select
                   label="Durum"
                   options={Object.entries(JOB_STATUS_LABELS).map(([value, label]) => ({

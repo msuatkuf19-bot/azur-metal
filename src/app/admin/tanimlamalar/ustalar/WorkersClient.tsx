@@ -57,6 +57,7 @@ export default function WorkersClient({ initialData }: WorkersClientProps) {
     phone: '',
     roleType: 'USTA',
     hourlyRateDefault: 0,
+    dailyRate: 0,
     notes: '',
     isActive: true,
   });
@@ -84,6 +85,7 @@ export default function WorkersClient({ initialData }: WorkersClientProps) {
       phone: '',
       roleType: 'USTA',
       hourlyRateDefault: 0,
+      dailyRate: 0,
       notes: '',
       isActive: true,
     });
@@ -97,6 +99,7 @@ export default function WorkersClient({ initialData }: WorkersClientProps) {
       phone: worker.phone || '',
       roleType: worker.roleType,
       hourlyRateDefault: worker.hourlyRateDefault,
+      dailyRate: (worker as any).dailyRate || 0,
       notes: worker.notes || '',
       isActive: worker.isActive,
     });
@@ -190,6 +193,11 @@ export default function WorkersClient({ initialData }: WorkersClientProps) {
       render: (w: Worker) => formatCurrency(w.hourlyRateDefault),
     },
     {
+      key: 'dailyRate',
+      header: 'Yevmiye',
+      render: (w: Worker) => formatCurrency((w as any).dailyRate || 0),
+    },
+    {
       key: 'workCount',
       header: 'İş Kaydı',
       render: (w: Worker) => `${w._count.workEntries} kayıt`,
@@ -269,7 +277,7 @@ export default function WorkersClient({ initialData }: WorkersClientProps) {
         columns={columns}
         data={filteredWorkers}
         keyExtractor={(w) => w.id}
-        onRowClick={(w) => router.push(`/admin/ustalar/${w.id}`)}
+        onRowClick={(w) => router.push(`/admin/tanimlamalar/ustalar/${w.id}`)}
         emptyMessage="Henüz çalışan eklenmemiş"
       />
 
@@ -309,14 +317,24 @@ export default function WorkersClient({ initialData }: WorkersClientProps) {
             </select>
           </div>
 
-          <Input
-            label="Varsayılan Saat Ücreti (₺)"
-            type="number"
-            min="0"
-            step="0.01"
-            value={formData.hourlyRateDefault}
-            onChange={(e) => setFormData({ ...formData, hourlyRateDefault: parseFloat(e.target.value) || 0 })}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Saat Ücreti (₺)"
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.hourlyRateDefault}
+              onChange={(e) => setFormData({ ...formData, hourlyRateDefault: parseFloat(e.target.value) || 0 })}
+            />
+            <Input
+              label="Yevmiye (₺)"
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.dailyRate}
+              onChange={(e) => setFormData({ ...formData, dailyRate: parseFloat(e.target.value) || 0 })}
+            />
+          </div>
 
           <TextArea
             label="Notlar"

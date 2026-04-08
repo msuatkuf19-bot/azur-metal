@@ -206,6 +206,9 @@ export default function SuppliersClient({ initialData }: SuppliersClientProps) {
       header: 'İşlemler',
       render: (s: Supplier) => (
         <div className="flex space-x-2">
+          <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/tanimlamalar/toptancilar/${s.id}`)}>
+            Detay
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => openEditDrawer(s)}>
             Düzenle
           </Button>

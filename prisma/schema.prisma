@@ -46,6 +46,7 @@ model BusinessJob {
   email          String?
   
   // İş Detayları
+  isTipi         String?  // Serbest metin: "Korkuluk", "Merdiven", "Çatı" vb.
   durum          String   @default("Yeni")
   oncelik        String   @default("Normal")
   etiketler      String?  // JSON: ["etiket1","etiket2"]
@@ -277,6 +278,7 @@ model Worker {
   phone             String?
   roleType          String   @default("USTA")  // "USTA" | "ISCI"
   hourlyRateDefault Float    @default(0)
+  dailyRate         Float    @default(0)       // Yevmiye ücreti
   notes             String?
   isActive          Boolean  @default(true)
   
@@ -284,6 +286,8 @@ model Worker {
   updatedAt         DateTime @updatedAt
   
   workEntries       WorkEntry[]
+  attendances       Attendance[]
+  workerPayments    WorkerPayment[]
 
   @@index([isActive])
   @@index([roleType])
@@ -454,4 +458,43 @@ model AuditLog {
   @@index([jobId])
   @@index([createdAt])
   @@index([entityType])
+}
+
+// ========================================
+// YOKLAMA (ATTENDANCE)
+// ========================================
+model Attendance {
+  id          String   @id @default(uuid())
+  workerId    String
+  worker      Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  
+  date        DateTime
+  type        String   @default("FULL_DAY")  // "FULL_DAY" | "HALF_DAY"
+  extraAmount Float    @default(0)            // Gece mesai, ekstra ücret
+  note        String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([workerId])
+  @@index([date])
+}
+
+// ========================================
+// PERSONEL ÖDEMESİ (WORKER PAYMENT)
+// ========================================
+model WorkerPayment {
+  id          String   @id @default(uuid())
+  workerId    String
+  worker      Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  
+  amount      Float
+  date        DateTime
+  description String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([workerId])
+  @@index([date])
 }

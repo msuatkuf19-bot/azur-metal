@@ -10,6 +10,7 @@ import { Drawer } from '@/components/ui/Drawer';
 import { Input, TextArea } from '@/components/ui/Input';
 import { JOB_STATUS_LABELS, JOB_STATUS_COLORS } from '@/lib/constants';
 import { formatCurrency, formatDate, formatPhone } from '@/lib/utils';
+import { exportToPdf, PdfSection } from '@/lib/pdf-export';
 import toast from 'react-hot-toast';
 
 interface MasterDetailClientProps {
@@ -111,6 +112,136 @@ export default function MasterDetailClient({ data }: MasterDetailClientProps) {
     setIsPaymentDrawerOpen(true);
   };
 
+  const handleExportPdf = () => {
+    const sections: PdfSection[] = [];
+
+    // Usta bilgileri
+    sections.push({
+      title: 'Usta Bilgileri',
+      type: 'info-grid',
+      data: [
+        { label: 'Ad Soyad', value: master.adSoyad },
+        { label: 'Telefon', value: formatPhone(master.telefon) },
+        { label: 'Uzmanlık', value: master.uzmanlik || '-' },
+        { label: 'Saat Ücreti', value: formatCurrency(master.saatlikUcret) + '/saat' },
+        { label: 'Durum', value: master.aktif ? 'Aktif' : 'Pasif' },
+        { label: 'Kayıt Tarihi', value: formatDate(master.createdAt) },
+      ],
+    });
+
+    if (master.notlar) {
+      sections.push({ title: 'Notlar', type: 'text', data: master.notlar });
+    }
+
+    // Finansal özet
+    sections.push({
+      title: 'Finansal Özet',
+      type: 'summary-cards',
+      data: [
+        { label: 'Toplam Proje', value: summary.totalProjects.toString(), color: 'blue' },
+        { label: 'Toplam Saat', value: summary.totalHours.toFixed(1), color: 'blue', sub: `${summary.totalWorkLogs} kayıt` },
+        { label: 'Toplam Hakediş', value: formatCurrency(summary.totalEarned), color: 'positive' },
+        { label: 'Ödenen', value: formatCurrency(summary.totalPaid), color: 'orange' },
+        { label: 'Kalan Borç', value: formatCurrency(summary.totalRemaining), color: summary.totalRemaining > 0 ? 'negative' : 'neutral' },
+      ],
+    });
+
+    sections.push({ type: 'divider' });
+
+    // Proje bazlı hakedişler
+    if (projectSummaries.length > 0) {
+      sections.push({
+        title: 'Proje Bazlı Hakedişler',
+        type: 'table',
+        data: {
+          columns: [
+            { header: 'Proje', key: 'proje', bold: true },
+            { header: 'Ref. Kodu', key: 'refKod' },
+            { header: 'Durum', key: 'durum' },
+            { header: 'Saat', key: 'saat', align: 'right' as const },
+            { header: 'Hakediş', key: 'hakedis', align: 'right' as const },
+            { header: 'Ödenen', key: 'odenen', align: 'right' as const },
+            { header: 'Kalan', key: 'kalan', align: 'right' as const },
+          ],
+          rows: projectSummaries.map((p: any) => ({
+            proje: p.projectName,
+            refKod: p.referansKodu,
+            durum: JOB_STATUS_LABELS[p.durum as keyof typeof JOB_STATUS_LABELS] || p.durum,
+            saat: p.totalHours.toFixed(1),
+            hakedis: formatCurrency(p.totalEarned),
+            odenen: formatCurrency(p.totalPaid),
+            kalan: formatCurrency(p.remaining),
+          })),
+          footer: {
+            proje: 'TOPLAM',
+            refKod: '',
+            durum: '',
+            saat: summary.totalHours.toFixed(1),
+            hakedis: formatCurrency(summary.totalEarned),
+            odenen: formatCurrency(summary.totalPaid),
+            kalan: formatCurrency(summary.totalRemaining),
+          },
+        },
+      });
+    }
+
+    // Son çalışma kayıtları
+    if (recentWorkLogs.length > 0) {
+      sections.push({
+        title: 'Çalışma Kayıtları',
+        type: 'table',
+        data: {
+          columns: [
+            { header: 'Tarih', key: 'tarih' },
+            { header: 'Proje', key: 'proje' },
+            { header: 'Saat', key: 'saat', align: 'right' as const },
+            { header: 'Birim Ücret', key: 'ucret', align: 'right' as const },
+            { header: 'Açıklama', key: 'aciklama' },
+            { header: 'Toplam', key: 'toplam', align: 'right' as const },
+          ],
+          rows: recentWorkLogs.map((log: any) => ({
+            tarih: formatDate(log.tarih),
+            proje: log.job?.firmaAdi || log.job?.musteriAdi || '-',
+            saat: log.toplamSaat?.toFixed(1),
+            ucret: formatCurrency(log.birimUcret || 0),
+            aciklama: log.aciklama || '-',
+            toplam: formatCurrency(log.toplamTutar || 0),
+          })),
+        },
+      });
+    }
+
+    // Son ödemeler
+    if (recentPayments.length > 0) {
+      const totalPayments = recentPayments.reduce((s: number, p: any) => s + p.tutar, 0);
+      sections.push({
+        title: 'Ödeme Kayıtları',
+        type: 'table',
+        data: {
+          columns: [
+            { header: 'Tarih', key: 'tarih' },
+            { header: 'Proje', key: 'proje' },
+            { header: 'Tutar', key: 'tutar', align: 'right' as const },
+            { header: 'Açıklama', key: 'aciklama' },
+          ],
+          rows: recentPayments.map((p: any) => ({
+            tarih: formatDate(p.tarih),
+            proje: p.job?.firmaAdi || p.job?.musteriAdi || '-',
+            tutar: formatCurrency(p.tutar),
+            aciklama: p.aciklama || '-',
+          })),
+          footer: { tarih: 'TOPLAM', proje: '', tutar: formatCurrency(totalPayments), aciklama: '' },
+        },
+      });
+    }
+
+    exportToPdf({
+      title: `Usta Raporu: ${master.adSoyad}`,
+      subtitle: `${master.uzmanlik || 'Usta'} • ${master.aktif ? 'Aktif' : 'Pasif'}`,
+      sections,
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -145,16 +276,24 @@ export default function MasterDetailClient({ data }: MasterDetailClientProps) {
           </div>
         </div>
 
-        <Button 
-          onClick={() => openPaymentDrawer()} 
-          disabled={projectsWithDebt.length === 0}
-          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
-        >
+        <div className="flex space-x-2">
+          <Button variant="secondary" onClick={handleExportPdf}>
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            PDF
+          </Button>
+          <Button 
+            onClick={() => openPaymentDrawer()} 
+            disabled={projectsWithDebt.length === 0}
+            className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
+          >
           <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
           Ödeme Yap
         </Button>
+      </div>
       </div>
 
       {/* 5-Card Summary */}

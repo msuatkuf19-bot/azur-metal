@@ -15,6 +15,7 @@ import {
   JOB_STATUS_COLORS,
 } from '@/lib/constants';
 import { formatCurrency, formatDate, formatDateTime, formatPhone } from '@/lib/utils';
+import { exportToPdf, PdfSection } from '@/lib/pdf-export';
 import { updateWorker } from '@/app/actions/workers';
 import toast from 'react-hot-toast';
 
@@ -70,6 +71,106 @@ export default function WorkerDetailClient({ data }: WorkerDetailClientProps) {
     }
   };
 
+  const handleExportPdf = () => {
+    const sections: PdfSection[] = [];
+
+    sections.push({
+      title: 'Çalışan Bilgileri',
+      type: 'info-grid',
+      data: [
+        { label: 'Ad Soyad', value: worker.fullName },
+        { label: 'Rol', value: WORKER_ROLE_LABELS[worker.roleType as keyof typeof WORKER_ROLE_LABELS] || worker.roleType },
+        { label: 'Telefon', value: worker.phone ? formatPhone(worker.phone) : '-' },
+        { label: 'Varsayılan Saat Ücreti', value: formatCurrency(worker.hourlyRateDefault) + '/saat' },
+        { label: 'Durum', value: worker.isActive ? 'Aktif' : 'Pasif' },
+        { label: 'Kayıt Tarihi', value: formatDate(worker.createdAt) },
+      ],
+    });
+
+    if (worker.notes) {
+      sections.push({ title: 'Notlar', type: 'text', data: worker.notes });
+    }
+
+    sections.push({
+      title: 'Finansal Özet',
+      type: 'summary-cards',
+      data: [
+        { label: 'Toplam Proje', value: summary.totalProjects.toString(), color: 'blue' },
+        { label: 'Toplam Saat', value: summary.totalHours.toFixed(1), color: 'blue', sub: `${summary.totalEntries} kayıt` },
+        { label: 'Toplam Hakediş', value: formatCurrency(summary.totalEarned), color: 'positive' },
+        { label: 'Ödenen', value: formatCurrency(summary.totalPaid), color: 'orange' },
+        { label: 'Kalan Alacak', value: formatCurrency(summary.totalRemaining), color: summary.totalRemaining > 0 ? 'negative' : 'neutral' },
+      ],
+    });
+
+    sections.push({ type: 'divider' });
+
+    if (projectSummaries.length > 0) {
+      sections.push({
+        title: 'Proje Bazlı Çalışmalar',
+        type: 'table',
+        data: {
+          columns: [
+            { header: 'Proje', key: 'proje', bold: true },
+            { header: 'Ref. Kodu', key: 'refKod' },
+            { header: 'Durum', key: 'durum' },
+            { header: 'Saat', key: 'saat', align: 'right' as const },
+            { header: 'Hakediş', key: 'hakedis', align: 'right' as const },
+            { header: 'Ödenen', key: 'odenen', align: 'right' as const },
+            { header: 'Kalan', key: 'kalan', align: 'right' as const },
+          ],
+          rows: projectSummaries.map((p: any) => ({
+            proje: p.projectName,
+            refKod: p.referansKodu,
+            durum: JOB_STATUS_LABELS[p.durum as keyof typeof JOB_STATUS_LABELS] || p.durum,
+            saat: p.totalHours.toFixed(1),
+            hakedis: formatCurrency(p.totalEarned),
+            odenen: formatCurrency(p.totalPaid),
+            kalan: formatCurrency(p.remaining),
+          })),
+          footer: {
+            proje: 'TOPLAM', refKod: '', durum: '',
+            saat: summary.totalHours.toFixed(1),
+            hakedis: formatCurrency(summary.totalEarned),
+            odenen: formatCurrency(summary.totalPaid),
+            kalan: formatCurrency(summary.totalRemaining),
+          },
+        },
+      });
+    }
+
+    if (worker.workEntries && worker.workEntries.length > 0) {
+      sections.push({
+        title: 'İşçilik Kayıtları',
+        type: 'table',
+        data: {
+          columns: [
+            { header: 'Tarih', key: 'tarih' },
+            { header: 'Proje', key: 'proje' },
+            { header: 'Saat', key: 'saat', align: 'right' as const },
+            { header: 'Saat Ücreti', key: 'ucret', align: 'right' as const },
+            { header: 'Açıklama', key: 'aciklama' },
+            { header: 'Toplam', key: 'toplam', align: 'right' as const },
+          ],
+          rows: worker.workEntries.map((e: any) => ({
+            tarih: formatDate(e.date),
+            proje: e.job?.firmaAdi || e.job?.musteriAdi || '-',
+            saat: e.hours?.toFixed(1),
+            ucret: formatCurrency(e.hourlyRate || 0),
+            aciklama: e.description || '-',
+            toplam: formatCurrency(e.totalAmount || 0),
+          })),
+        },
+      });
+    }
+
+    exportToPdf({
+      title: `Çalışan Raporu: ${worker.fullName}`,
+      subtitle: `${WORKER_ROLE_LABELS[worker.roleType as keyof typeof WORKER_ROLE_LABELS] || worker.roleType} • ${worker.isActive ? 'Aktif' : 'Pasif'}`,
+      sections,
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -106,12 +207,20 @@ export default function WorkerDetailClient({ data }: WorkerDetailClientProps) {
           </div>
         </div>
 
-        <Button variant="secondary" onClick={() => setIsEditDrawerOpen(true)}>
+        <div className="flex space-x-2">
+          <Button variant="secondary" onClick={handleExportPdf}>
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            PDF
+          </Button>
+          <Button variant="secondary" onClick={() => setIsEditDrawerOpen(true)}>
           <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
           Düzenle
         </Button>
+      </div>
       </div>
 
       {/* 5-Card Summary */}

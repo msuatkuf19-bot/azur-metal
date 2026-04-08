@@ -9,6 +9,7 @@ export const businessJobSchema = z.object({
   vergiNo: z.string().nullish(),
   telefon: z.string().min(1, 'Telefon gerekli'),
   email: z.string().email('Geçerli email adresi giriniz').nullish().or(z.literal('')),
+  isTipi: z.string().nullish(),
   durum: z.string().default('Yeni'),
   oncelik: z.string().default('Normal'),
   etiketler: z.string().nullish(), // JSON string
@@ -120,6 +121,7 @@ export const workerSchema = z.object({
   phone: z.string().optional(),
   roleType: z.enum(['USTA', 'ISCI']).default('USTA'),
   hourlyRateDefault: z.number().min(0, 'Saat ücreti 0 veya pozitif olmalı').default(0),
+  dailyRate: z.number().min(0, 'Yevmiye 0 veya pozitif olmalı').default(0),
   notes: z.string().optional(),
   isActive: z.boolean().default(true),
 });
@@ -177,3 +179,23 @@ export type SupplierInput = z.infer<typeof supplierSchema>;
 export type MaterialInput = z.infer<typeof materialSchema>;
 export type WorkEntryInput = z.infer<typeof workEntrySchema>;
 export type MaterialPurchaseInput = z.infer<typeof materialPurchaseSchema>;
+
+// Yoklama (Attendance) Validasyon
+export const attendanceSchema = z.object({
+  workerId: z.string().min(1, 'Çalışan seçilmeli'),
+  date: z.string().min(1, 'Tarih gerekli'),
+  type: z.enum(['FULL_DAY', 'HALF_DAY']).default('FULL_DAY'),
+  extraAmount: z.number().min(0, 'Ekstra ücret 0 veya pozitif olmalı').default(0),
+  note: z.string().optional(),
+});
+
+// Personel Ödemesi (WorkerPayment) Validasyon
+export const workerPaymentSchema = z.object({
+  workerId: z.string().min(1, 'Çalışan seçilmeli'),
+  amount: z.number().positive('Tutar pozitif olmalı'),
+  date: z.string().min(1, 'Tarih gerekli'),
+  description: z.string().optional(),
+});
+
+export type AttendanceInput = z.infer<typeof attendanceSchema>;
+export type WorkerPaymentInput = z.infer<typeof workerPaymentSchema>;

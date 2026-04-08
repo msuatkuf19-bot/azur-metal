@@ -14,6 +14,7 @@ import {
   JOB_PRIORITY_COLORS,
 } from '@/lib/constants';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { exportToPdf, PdfSection } from '@/lib/pdf-export';
 
 export default function JobsListClient({ jobs, searchParams }: any) {
   const router = useRouter();
@@ -41,6 +42,65 @@ export default function JobsListClient({ jobs, searchParams }: any) {
     router.push(`/admin/is-emirleri?${newParams.toString()}`);
   };
 
+  const handleExportListPdf = () => {
+    const totalTeklif = jobs.reduce((s: number, j: any) => s + (j.financials?.acceptedOfferTotal || 0), 0);
+    const totalKalan = jobs.reduce((s: number, j: any) => s + (j.financials?.remaining || 0), 0);
+    const totalTahsilat = jobs.reduce((s: number, j: any) => s + (j.financials?.totalIncome || 0), 0);
+
+    const sections: PdfSection[] = [
+      {
+        title: 'Genel Özet',
+        type: 'summary-cards',
+        data: [
+          { label: 'Toplam İş Emri', value: jobs.length.toString(), color: 'blue' },
+          { label: 'Toplam Teklif', value: formatCurrency(totalTeklif), color: 'blue' },
+          { label: 'Toplam Tahsilat', value: formatCurrency(totalTahsilat), color: 'positive' },
+          { label: 'Toplam Kalan', value: formatCurrency(totalKalan), color: totalKalan > 0 ? 'negative' : 'neutral' },
+        ],
+      },
+      { type: 'divider' },
+      {
+        title: `İş Emirleri Listesi (${jobs.length})`,
+        type: 'table',
+        data: {
+          columns: [
+            { header: 'Ref. Kodu', key: 'ref', bold: true },
+            { header: 'İşletme / Müşteri', key: 'isletme' },
+            { header: 'İş Tipi', key: 'isTipi' },
+            { header: 'Durum', key: 'durum' },
+            { header: 'Öncelik', key: 'oncelik' },
+            { header: 'Teklif Toplam', key: 'teklif', align: 'right' as const },
+            { header: 'Kalan', key: 'kalan', align: 'right' as const },
+            { header: 'Tarih', key: 'tarih' },
+          ],
+          rows: jobs.map((j: any) => ({
+            ref: j.referansKodu,
+            isletme: j.firmaAdi || j.musteriAdi || j.isletmeAdi || '-',
+            isTipi: j.isTipi || '-',
+            durum: JOB_STATUS_LABELS[j.durum as keyof typeof JOB_STATUS_LABELS] || j.durum,
+            oncelik: JOB_PRIORITY_LABELS[j.oncelik as keyof typeof JOB_PRIORITY_LABELS] || j.oncelik,
+            teklif: formatCurrency(j.financials?.acceptedOfferTotal || 0),
+            kalan: formatCurrency(j.financials?.remaining || 0),
+            tarih: formatDate(j.guncellemeTarihi || j.olusturmaTarihi),
+          })),
+          footer: {
+            ref: 'TOPLAM', isletme: `${jobs.length} iş emri`, isTipi: '', durum: '', oncelik: '',
+            teklif: formatCurrency(totalTeklif),
+            kalan: formatCurrency(totalKalan),
+            tarih: '',
+          },
+        },
+      },
+    ];
+
+    exportToPdf({
+      title: 'İş Emirleri Raporu',
+      subtitle: searchParams.durum ? `Durum: ${JOB_STATUS_LABELS[searchParams.durum as keyof typeof JOB_STATUS_LABELS] || searchParams.durum}` : 'Tüm İş Emirleri',
+      sections,
+      orientation: 'landscape',
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -49,14 +109,22 @@ export default function JobsListClient({ jobs, searchParams }: any) {
           <h1 className="text-2xl font-bold text-gray-900">İş Emirleri</h1>
           <p className="text-gray-600 mt-1">{jobs.length} iş emri bulundu</p>
         </div>
-        <Link href="/admin/is-emirleri/yeni">
-          <Button>
-            <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        <div className="flex space-x-2">
+          <Button variant="secondary" onClick={() => handleExportListPdf()}>
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            Yeni İş Emri
+            PDF
           </Button>
-        </Link>
+          <Link href="/admin/is-emirleri/yeni">
+            <Button>
+              <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Yeni İş Emri
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}

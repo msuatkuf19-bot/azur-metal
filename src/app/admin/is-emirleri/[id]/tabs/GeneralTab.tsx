@@ -88,6 +88,12 @@ export default function GeneralTab({ job }: any) {
         </CardHeader>
         <CardBody>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {job.isTipi && (
+              <div>
+                <label className="text-sm font-medium text-gray-600">İş Tipi</label>
+                <p className="mt-1 text-gray-900">{job.isTipi}</p>
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium text-gray-600">Sektör</label>
               <p className="mt-1 text-gray-900">{job.sektor}</p>
