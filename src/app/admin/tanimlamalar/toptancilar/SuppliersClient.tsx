@@ -1,21 +1,25 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Drawer } from '@/components/ui/Drawer';
 import { DataTable } from '@/components/ui/DataTable';
 import { FilterBar, SelectFilter } from '@/components/ui/FilterBar';
 import { Input, TextArea } from '@/components/ui/Input';
+import { SupplierBalanceCard } from '@/components/ui/SupplierBalanceCard';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { ACTIVE_STATUS_COLORS } from '@/lib/constants';
-import { 
-  createSupplier, 
-  updateSupplier, 
-  deleteSupplier, 
-  activateSupplier 
+import { formatCurrency } from '@/lib/utils';
+import {
+  createSupplier,
+  updateSupplier,
+  deleteSupplier,
+  activateSupplier
 } from '@/app/actions/suppliers';
-import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { exportToPdf, PdfSection } from '@/lib/pdf-export';
 
 interface Supplier {
   id: string;
@@ -29,6 +33,10 @@ interface Supplier {
   isActive: boolean;
   createdAt: string;
   _count: { materialPurchases: number };
+  totalPurchases?: number;
+  thisMonthTotal?: number;
+  openBalance?: number;
+  lastPurchaseDate?: string | null;
 }
 
 interface SuppliersClientProps {
@@ -45,6 +53,7 @@ export default function SuppliersClient({ initialData }: SuppliersClientProps) {
   // Filters
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('');
+  const [view, setView] = useState<'table' | 'card'>('card');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -226,6 +235,39 @@ export default function SuppliersClient({ initialData }: SuppliersClientProps) {
     },
   ];
 
+  const handleExportPdf = () => {
+    const sections: PdfSection[] = [
+      {
+        title: `Toptancı Listesi (${filteredSuppliers.length})`,
+        type: 'table',
+        data: {
+          columns: [
+            { header: 'Firma Adı', key: 'firma', bold: true },
+            { header: 'Yetkili', key: 'yetkili' },
+            { header: 'Telefon', key: 'telefon' },
+            { header: 'E-posta', key: 'email' },
+            { header: 'Alım Sayısı', key: 'alim', align: 'right' as const },
+            { header: 'Durum', key: 'durum' },
+          ],
+          rows: filteredSuppliers.map((s) => ({
+            firma: s.name,
+            yetkili: s.contactName || '-',
+            telefon: s.phone || '-',
+            email: s.email || '-',
+            alim: s._count.materialPurchases.toString(),
+            durum: s.isActive ? 'Aktif' : 'Pasif',
+          })),
+        },
+      },
+    ];
+
+    exportToPdf({
+      title: 'Toptancı Raporu',
+      subtitle: `${filteredSuppliers.length} toptancı`,
+      sections,
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Actions */}
@@ -235,12 +277,36 @@ export default function SuppliersClient({ initialData }: SuppliersClientProps) {
             Toplam {filteredSuppliers.length} toptancı
           </p>
         </div>
-        <Button onClick={openCreateDrawer}>
-          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Yeni Toptancı
-        </Button>
+        <div className="flex space-x-2">
+          <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setView('card')}
+              className={`px-3 py-2 text-sm ${view === 'card' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+            >
+              Kart
+            </button>
+            <button
+              type="button"
+              onClick={() => setView('table')}
+              className={`px-3 py-2 text-sm ${view === 'table' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+            >
+              Tablo
+            </button>
+          </div>
+          <Button variant="secondary" onClick={handleExportPdf}>
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Rapor Al
+          </Button>
+          <Button onClick={openCreateDrawer}>
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Yeni Toptancı
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -256,13 +322,34 @@ export default function SuppliersClient({ initialData }: SuppliersClientProps) {
         />
       </FilterBar>
 
-      {/* Table */}
-      <DataTable
-        columns={columns}
-        data={filteredSuppliers}
-        keyExtractor={(s) => s.id}
-        emptyMessage="Henüz toptancı eklenmemiş"
-      />
+      {view === 'card' ? (
+        filteredSuppliers.length === 0 ? (
+          <EmptyState title="Henüz toptancı eklenmemiş" actionLabel="Yeni Toptancı" onAction={openCreateDrawer} />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredSuppliers.map((s) => (
+              <SupplierBalanceCard
+                key={s.id}
+                supplier={s}
+                thisMonthTotal={s.thisMonthTotal || 0}
+                totalPurchases={s.totalPurchases || 0}
+                openBalance={s.openBalance || 0}
+                lastPurchaseDate={s.lastPurchaseDate}
+                isActive={s.isActive}
+                onClick={() => router.push(`/admin/tanimlamalar/toptancilar/${s.id}`)}
+              />
+            ))}
+          </div>
+        )
+      ) : (
+        <DataTable
+          columns={columns}
+          data={filteredSuppliers}
+          keyExtractor={(s) => s.id}
+          onRowClick={(s) => router.push(`/admin/tanimlamalar/toptancilar/${s.id}`)}
+          emptyMessage="Henüz toptancı eklenmemiş"
+        />
+      )}
 
       {/* Drawer Form */}
       <Drawer

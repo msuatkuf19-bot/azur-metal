@@ -151,8 +151,8 @@ export const workEntrySchema = z.object({
   jobId: z.string().min(1, 'İş emri seçilmeli'),
   workerId: z.string().min(1, 'Çalışan seçilmeli'),
   date: z.string().min(1, 'Tarih gerekli'),
-  hours: z.number().positive('Saat pozitif olmalı').min(0.5, 'En az 0.5 saat olmalı'),
-  hourlyRate: z.number().min(0, 'Saat ücreti 0 veya pozitif olmalı'),
+  hours: z.number().positive('Gün pozitif olmalı').min(0.5, 'En az yarım gün olmalı'),
+  hourlyRate: z.number().min(0, 'Yevmiye 0 veya pozitif olmalı'),
   description: z.string().optional(),
 });
 
@@ -168,10 +168,15 @@ export const materialPurchaseSchema = z.object({
   vatRate: z.number().min(0).max(100).optional(),
   note: z.string().optional(),
   purchaseDate: z.string().optional(),
+  invoiceNo: z.string().optional(),
+  paymentStatus: z.enum(['Acik', 'Odendi']).optional(),
 }).refine(
   (data) => data.materialId || data.materialName,
   { message: 'Malzeme seçin veya malzeme adı girin', path: ['materialName'] }
 );
+
+// Malzeme Alımı güncelleme (kısmi alanlar, refine kısıtı olmadan)
+export const materialPurchaseUpdateSchema = materialPurchaseSchema.innerType().partial();
 
 // Type exports
 export type WorkerInput = z.infer<typeof workerSchema>;
@@ -179,13 +184,29 @@ export type SupplierInput = z.infer<typeof supplierSchema>;
 export type MaterialInput = z.infer<typeof materialSchema>;
 export type WorkEntryInput = z.infer<typeof workEntrySchema>;
 export type MaterialPurchaseInput = z.infer<typeof materialPurchaseSchema>;
+export type MaterialPurchaseUpdateInput = z.infer<typeof materialPurchaseUpdateSchema>;
 
 // Yoklama (Attendance) Validasyon
 export const attendanceSchema = z.object({
   workerId: z.string().min(1, 'Çalışan seçilmeli'),
   date: z.string().min(1, 'Tarih gerekli'),
-  type: z.enum(['FULL_DAY', 'HALF_DAY']).default('FULL_DAY'),
+  type: z.enum(['NONE', 'HALF_DAY', 'FULL_DAY', 'DAY_1_5', 'DAY_2']).default('FULL_DAY'),
+  jobId: z.string().optional().nullable(),
+  dailyRate: z.number().min(0, 'Yevmiye 0 veya pozitif olmalı').optional(), // Boşsa çalışanın tanımlı yevmiyesi kullanılır
   extraAmount: z.number().min(0, 'Ekstra ücret 0 veya pozitif olmalı').default(0),
+  extraDescription: z.string().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  note: z.string().optional(),
+});
+
+// Toplu Yoklama Validasyon
+export const bulkAttendanceSchema = z.object({
+  workerIds: z.array(z.string().min(1)).min(1, 'En az bir personel seçilmeli'),
+  date: z.string().min(1, 'Tarih gerekli'),
+  type: z.enum(['NONE', 'HALF_DAY', 'FULL_DAY', 'DAY_1_5', 'DAY_2']).default('FULL_DAY'),
+  jobId: z.string().optional().nullable(),
+  extraAmount: z.number().min(0).default(0),
   note: z.string().optional(),
 });
 
@@ -194,8 +215,48 @@ export const workerPaymentSchema = z.object({
   workerId: z.string().min(1, 'Çalışan seçilmeli'),
   amount: z.number().positive('Tutar pozitif olmalı'),
   date: z.string().min(1, 'Tarih gerekli'),
+  paymentType: z.enum(['HAKEDIS', 'AVANS', 'EKSTRA_MESAI', 'DUZELTME', 'DIGER']).default('HAKEDIS'),
+  paymentMethod: z.enum(['Nakit', 'HavaleEFT', 'KrediKarti', 'Diger']).default('Nakit'),
+  jobId: z.string().optional().nullable(),
   description: z.string().optional(),
+  documentUrl: z.string().optional(),
+});
+
+// Dönem Kapatma Validasyon
+export const settlementPeriodSchema = z.object({
+  workerId: z.string().min(1, 'Çalışan seçilmeli'),
+  action: z.enum(['PAY_AND_CLOSE', 'CLOSE_WITH_BALANCE']),
+  paymentMethod: z.enum(['Nakit', 'HavaleEFT', 'KrediKarti', 'Diger']).default('Nakit'),
+  notes: z.string().optional(),
+});
+
+// Toptancı Ödemesi (SupplierPayment) Validasyon
+export const supplierPaymentSchema = z.object({
+  supplierId: z.string().min(1, 'Toptancı seçilmeli'),
+  jobId: z.string().optional().nullable(),
+  amount: z.number().positive('Tutar pozitif olmalı'),
+  paymentDate: z.string().min(1, 'Tarih gerekli'),
+  paymentMethod: z.enum(['Nakit', 'HavaleEFT', 'KrediKarti', 'Cek', 'Diger']).default('Nakit'),
+  description: z.string().optional(),
+  documentUrl: z.string().optional(),
+});
+
+// Toptancı Filtre Validasyon
+export const supplierFilterSchema = z.object({
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  jobId: z.string().optional(),
+  customer: z.string().optional(),
+  materialId: z.string().optional(),
+  paymentStatus: z.enum(['Acik', 'Odendi']).optional(),
+  minAmount: z.number().optional(),
+  maxAmount: z.number().optional(),
+  search: z.string().optional(),
 });
 
 export type AttendanceInput = z.infer<typeof attendanceSchema>;
+export type BulkAttendanceInput = z.infer<typeof bulkAttendanceSchema>;
 export type WorkerPaymentInput = z.infer<typeof workerPaymentSchema>;
+export type SettlementPeriodInput = z.infer<typeof settlementPeriodSchema>;
+export type SupplierPaymentInput = z.infer<typeof supplierPaymentSchema>;
+export type SupplierFilterInput = z.infer<typeof supplierFilterSchema>;

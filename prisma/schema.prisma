@@ -78,6 +78,9 @@ model BusinessJob {
   auditLogs        AuditLog[]
   workEntries      WorkEntry[]
   materialPurchases MaterialPurchase[]
+  attendances      Attendance[]
+  workerPayments   WorkerPayment[]
+  supplierPayments SupplierPayment[]
 
   @@index([durum])
   @@index([oncelik])
@@ -288,6 +291,7 @@ model Worker {
   workEntries       WorkEntry[]
   attendances       Attendance[]
   workerPayments    WorkerPayment[]
+  settlementPeriods WorkerSettlementPeriod[]
 
   @@index([isActive])
   @@index([roleType])
@@ -309,8 +313,9 @@ model Supplier {
   
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  
+
   materialPurchases MaterialPurchase[]
+  supplierPayments  SupplierPayment[]
 
   @@index([isActive])
 }
@@ -380,6 +385,8 @@ model MaterialPurchase {
   totalAmount    Float       @default(0)
   note           String?
   purchaseDate   DateTime    @default(now())
+  invoiceNo      String?     // Fatura numarası
+  paymentStatus  String      @default("Acik")  // "Acik" | "Odendi"
   
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
@@ -464,37 +471,109 @@ model AuditLog {
 // YOKLAMA (ATTENDANCE)
 // ========================================
 model Attendance {
-  id          String   @id @default(uuid())
-  workerId    String
-  worker      Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
-  
-  date        DateTime
-  type        String   @default("FULL_DAY")  // "FULL_DAY" | "HALF_DAY"
-  extraAmount Float    @default(0)            // Gece mesai, ekstra ücret
-  note        String?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String   @id @default(uuid())
+  workerId         String
+  worker           Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  jobId            String?
+  job              BusinessJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  date             DateTime
+  type             String   @default("FULL_DAY")  // "NONE" | "HALF_DAY" | "FULL_DAY" | "DAY_1_5" | "DAY_2"
+  dayMultiplier    Float    @default(1)            // 0, 0.5, 1, 1.5, 2
+  dailyRateSnapshot Float   @default(0)            // Kayıt anındaki yevmiye
+  extraAmount      Float    @default(0)            // Gece mesai, ekstra ücret
+  extraDescription String?                          // Serbest metin: "Gece 22.00'ye kadar çalıştı" vb.
+  startTime        String?                          // "08:00" (opsiyonel)
+  endTime          String?                          // "18:30" (opsiyonel)
+  note             String?
+  createdById      String?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@index([workerId])
   @@index([date])
+  @@index([jobId])
 }
 
 // ========================================
 // PERSONEL ÖDEMESİ (WORKER PAYMENT)
 // ========================================
 model WorkerPayment {
-  id          String   @id @default(uuid())
-  workerId    String
-  worker      Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
-  
-  amount      Float
-  date        DateTime
-  description String?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(uuid())
+  workerId      String
+  worker        Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  jobId         String?
+  job           BusinessJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  amount        Float
+  date          DateTime
+  paymentType   String   @default("HAKEDIS")  // "HAKEDIS" | "AVANS" | "EKSTRA_MESAI" | "DUZELTME" | "DIGER"
+  paymentMethod String   @default("Nakit")    // "Nakit" | "HavaleEFT" | "KrediKarti" | "Diger"
+  description   String?
+  documentUrl   String?
+  createdById   String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([workerId])
   @@index([date])
+  @@index([jobId])
+}
+
+// ========================================
+// PERSONEL DÖNEM KAPATMA (SETTLEMENT PERIOD)
+// ========================================
+model WorkerSettlementPeriod {
+  id             String   @id @default(uuid())
+  workerId       String
+  worker         Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  startDate      DateTime
+  endDate        DateTime
+  workedDays     Float    @default(0)   // Gün karşılığı (katsayı toplamı)
+  earnedAmount   Float    @default(0)   // Toplam hakediş (yevmiye + ekstra)
+  extraAmount    Float    @default(0)   // Ekstra ücretler toplamı
+  paidAmount     Float    @default(0)   // Dönem içi ödemeler
+  balance        Float    @default(0)   // Kapanış bakiyesi
+  status         String   @default("CLOSED") // "OPEN" | "CLOSED" | "PARTIALLY_PAID"
+  notes          String?
+  closedAt       DateTime?
+  closedByUserId String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([workerId])
+  @@index([endDate])
+  @@index([status])
+}
+
+// ========================================
+// TOPTANCI ÖDEMESİ (SUPPLIER PAYMENT)
+// ========================================
+model SupplierPayment {
+  id            String   @id @default(uuid())
+  supplierId    String
+  supplier      Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  jobId         String?
+  job           BusinessJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  amount        Float
+  paymentDate   DateTime
+  paymentMethod String   @default("Nakit")
+  description   String?
+  documentUrl   String?
+  createdById   String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([supplierId])
+  @@index([paymentDate])
+  @@index([jobId])
 }

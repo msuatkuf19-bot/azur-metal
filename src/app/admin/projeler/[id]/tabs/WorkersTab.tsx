@@ -27,7 +27,7 @@ export default function WorkersTab({ project, workerSummary }: WorkersTabProps) 
         </Card>
         <Card className="bg-purple-50 border-purple-200">
           <CardBody className="text-center">
-            <p className="text-sm text-purple-600">Toplam Saat</p>
+            <p className="text-sm text-purple-600">Toplam Gün</p>
             <p className="text-3xl font-bold text-purple-800">{totalHours.toFixed(1)}</p>
           </CardBody>
         </Card>
@@ -53,7 +53,7 @@ export default function WorkersTab({ project, workerSummary }: WorkersTabProps) 
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Çalışan</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rol</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Kayıt Sayısı</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Toplam Saat</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Toplam Gün</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Toplam Tutar</th>
                   </tr>
                 </thead>
@@ -81,7 +81,7 @@ export default function WorkersTab({ project, workerSummary }: WorkersTabProps) 
                         </Badge>
                       </td>
                       <td className="px-6 py-4 text-right text-gray-600">{item.entryCount}</td>
-                      <td className="px-6 py-4 text-right font-medium">{item.totalHours.toFixed(1)} saat</td>
+                      <td className="px-6 py-4 text-right font-medium">{item.totalHours.toFixed(1)} gün</td>
                       <td className="px-6 py-4 text-right font-semibold text-emerald-600">{formatCurrency(item.totalAmount)}</td>
                     </tr>
                   ))}
@@ -116,8 +116,8 @@ export default function WorkersTab({ project, workerSummary }: WorkersTabProps) 
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Çalışan</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Saat</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Saatlik Ücret</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Gün</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Yevmiye</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Toplam</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Açıklama</th>
                   </tr>
@@ -136,7 +136,7 @@ export default function WorkersTab({ project, workerSummary }: WorkersTabProps) 
                           <span className="font-medium">{entry.worker.fullName}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-right">{entry.hours} saat</td>
+                      <td className="px-6 py-4 text-right">{entry.hours} gün</td>
                       <td className="px-6 py-4 text-right text-gray-600">{formatCurrency(entry.hourlyRate)}</td>
                       <td className="px-6 py-4 text-right font-semibold text-emerald-600">{formatCurrency(entry.totalAmount)}</td>
                       <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{entry.description || '-'}</td>

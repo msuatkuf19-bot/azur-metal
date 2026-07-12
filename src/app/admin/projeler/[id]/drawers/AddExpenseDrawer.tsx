@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Drawer } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
 import { Input, Select, TextArea } from '@/components/ui/Input';
-import { PAYMENT_PARTY_LABELS, PAYMENT_METHOD_LABELS, EXPENSE_CATEGORY_LABELS } from '@/lib/constants';
+import { PAYMENT_METHOD_LABELS } from '@/lib/constants';
 import { createPayment } from '@/app/actions/business-jobs';
 import toast from 'react-hot-toast';
 
@@ -35,6 +35,11 @@ export default function AddExpenseDrawer({
     
     if (!formData.tutar) {
       toast.error('Lütfen tutar girin');
+      return;
+    }
+
+    if (!formData.aciklama.trim()) {
+      toast.error('Lütfen açıklama girin (Yakıt, Yemek, Nakliye vb.)');
       return;
     }
 
@@ -71,21 +76,6 @@ export default function AddExpenseDrawer({
   return (
     <Drawer isOpen={isOpen} onClose={onClose} title="Gider Ekle" size="md">
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Category / Party */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Gider Türü <span className="text-red-500">*</span>
-          </label>
-          <Select
-            options={Object.entries(PAYMENT_PARTY_LABELS).map(([value, label]) => ({
-              value,
-              label,
-            }))}
-            value={formData.taraf}
-            onChange={(e) => setFormData({ ...formData, taraf: e.target.value })}
-          />
-        </div>
-
         {/* Amount */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -131,11 +121,11 @@ export default function AddExpenseDrawer({
         {/* Description */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Açıklama
+            Açıklama <span className="text-red-500">*</span>
           </label>
           <TextArea
             rows={3}
-            placeholder="Gider detayı..."
+            placeholder="Yakıt, Yemek, Nakliye, Konaklama vb. gider detayını yazın..."
             value={formData.aciklama}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, aciklama: e.target.value })}
           />

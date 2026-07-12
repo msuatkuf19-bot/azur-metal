@@ -7,17 +7,6 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { createBusinessJob } from '@/app/actions/business-jobs';
 
-const JOB_TYPES = [
-  { value: 'PIRINC', label: 'Pirinç' },
-  { value: 'KORKULUK', label: 'Korkuluk' },
-  { value: 'KUPESTE', label: 'Küpeşte' },
-  { value: 'DEMIR_DOGRULAMA', label: 'Demir Doğrulama' },
-  { value: 'KAYNAK', label: 'Kaynak' },
-  { value: 'PASLANMAZ', label: 'Paslanmaz' },
-  { value: 'ALUMINYUM', label: 'Alüminyum' },
-  { value: 'DIGER', label: 'Diğer' },
-];
-
 export default function NewProjectPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -38,7 +27,7 @@ export default function NewProjectPage() {
       firmaAdi: (formData.get('title') as string) || undefined,
       adres: (formData.get('customerAddress') as string) || undefined,
       oncelik: formData.get('priority') as string || 'Normal',
-      etiketler: (formData.get('jobType') as string) || undefined,
+      isTipi: (formData.get('jobType') as string) || undefined,
       notlar: (formData.get('notes') as string) || undefined,
     };
     
@@ -107,21 +96,12 @@ export default function NewProjectPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  İş Tipi *
-                </label>
-                <select
+                <Input
+                  label="İş Tipi *"
                   name="jobType"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Örn: Korkuluk, Merdiven, Kaynak, Paslanmaz..."
                   required
-                >
-                  <option value="">Seçiniz...</option>
-                  {JOB_TYPES.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
               
               <div>

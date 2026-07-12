@@ -169,7 +169,7 @@ export async function createWorkEntry(data: WorkEntryInput) {
       'CREATE', 
       'WorkEntry', 
       entry.id, 
-      `İşçilik kaydı: ${entry.worker.fullName} - ${entry.hours} saat`,
+      `İşçilik kaydı: ${entry.worker.fullName} - ${entry.hours} gün`,
       validated.jobId
     );
 
@@ -270,7 +270,7 @@ export async function deleteWorkEntry(id: string) {
       'DELETE', 
       'WorkEntry', 
       id, 
-      `İşçilik silindi: ${entry.worker.fullName} - ${entry.hours} saat`,
+      `İşçilik silindi: ${entry.worker.fullName} - ${entry.hours} gün`,
       entry.jobId
     );
 

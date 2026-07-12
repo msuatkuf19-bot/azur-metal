@@ -26,7 +26,7 @@ export default function AddWorkEntryDrawer({
   const [formData, setFormData] = useState({
     workerId: '',
     date: new Date().toISOString().split('T')[0],
-    hours: '',
+    hours: '1',
     hourlyRate: '',
     description: '',
   });
@@ -36,7 +36,7 @@ export default function AddWorkEntryDrawer({
     setFormData({
       ...formData,
       workerId,
-      hourlyRate: worker?.hourlyRateDefault?.toString() || '',
+      hourlyRate: (worker?.dailyRate || worker?.hourlyRateDefault)?.toString() || '',
     });
   };
 
@@ -64,7 +64,7 @@ export default function AddWorkEntryDrawer({
       setFormData({
         workerId: '',
         date: new Date().toISOString().split('T')[0],
-        hours: '',
+        hours: '1',
         hourlyRate: '',
         description: '',
       });
@@ -76,6 +76,13 @@ export default function AddWorkEntryDrawer({
 
     setIsLoading(false);
   };
+
+  const DAY_OPTIONS = [
+    { value: '0.5', label: 'Yarım Gün' },
+    { value: '1', label: 'Tam Gün' },
+    { value: '1.5', label: '1,5 Gün' },
+    { value: '2', label: '2 Gün' },
+  ];
 
   const totalAmount = formData.hours && formData.hourlyRate
     ? (parseFloat(formData.hours) * parseFloat(formData.hourlyRate)).toFixed(2)
@@ -114,30 +121,27 @@ export default function AddWorkEntryDrawer({
           />
         </div>
 
-        {/* Hours and Rate */}
+        {/* Days and Rate */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Saat <span className="text-red-500">*</span>
+              Çalışma <span className="text-red-500">*</span>
             </label>
-            <Input
-              type="number"
-              step="0.5"
-              min="0"
-              placeholder="8"
+            <Select
+              options={DAY_OPTIONS}
               value={formData.hours}
               onChange={(e) => setFormData({ ...formData, hours: e.target.value })}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Saatlik Ücret (₺) <span className="text-red-500">*</span>
+              Yevmiye (₺) <span className="text-red-500">*</span>
             </label>
             <Input
               type="number"
               step="0.01"
               min="0"
-              placeholder="100"
+              placeholder="1500"
               value={formData.hourlyRate}
               onChange={(e) => setFormData({ ...formData, hourlyRate: e.target.value })}
             />
@@ -164,7 +168,7 @@ export default function AddWorkEntryDrawer({
             <span className="text-2xl font-bold text-emerald-600">₺{totalAmount}</span>
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            {formData.hours || '0'} saat × ₺{formData.hourlyRate || '0'} = ₺{totalAmount}
+            {formData.hours || '0'} gün × ₺{formData.hourlyRate || '0'} = ₺{totalAmount}
           </p>
         </div>
 

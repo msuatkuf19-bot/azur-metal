@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { materialPurchaseSchema, type MaterialPurchaseInput } from '@/lib/validations';
+import { materialPurchaseSchema, materialPurchaseUpdateSchema, type MaterialPurchaseInput } from '@/lib/validations';
 
 // Audit log helper
 async function createAuditLog(
@@ -143,6 +143,8 @@ export async function createMaterialPurchase(data: MaterialPurchaseInput) {
           totalAmount,
           note: validated.note,
           purchaseDate: validated.purchaseDate ? new Date(validated.purchaseDate) : new Date(),
+          invoiceNo: validated.invoiceNo || null,
+          paymentStatus: validated.paymentStatus || 'Acik',
         },
         include: { supplier: true, material: true },
       });
@@ -174,6 +176,9 @@ export async function createMaterialPurchase(data: MaterialPurchaseInput) {
     );
 
     revalidatePath(`/admin/is-emirleri/${validated.jobId}`);
+    revalidatePath(`/admin/projeler/${validated.jobId}`);
+    revalidatePath(`/admin/tanimlamalar/toptancilar/${validated.supplierId}`);
+    revalidatePath("/admin/malzeme-alimlari");
     return { success: true, data: purchase };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -188,8 +193,7 @@ export async function updateMaterialPurchase(id: string, data: Partial<MaterialP
       return { success: false, error: 'Malzeme alımı bulunamadı' };
     }
 
-    // Manuel validasyon - partial güncelleme için
-    const validated = data;
+    const validated = materialPurchaseUpdateSchema.parse(data);
 
     // totalAmount hesapla
     const quantity = validated.quantity ?? existingPurchase.quantity;
@@ -239,6 +243,9 @@ export async function updateMaterialPurchase(id: string, data: Partial<MaterialP
     );
 
     revalidatePath(`/admin/is-emirleri/${existingPurchase.jobId}`);
+    revalidatePath(`/admin/projeler/${existingPurchase.jobId}`);
+    revalidatePath(`/admin/tanimlamalar/toptancilar/${existingPurchase.supplierId}`);
+    revalidatePath("/admin/malzeme-alimlari");
     return { success: true, data: purchase };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -285,9 +292,45 @@ export async function deleteMaterialPurchase(id: string) {
     );
 
     revalidatePath(`/admin/is-emirleri/${purchase.jobId}`);
+    revalidatePath(`/admin/projeler/${purchase.jobId}`);
+    revalidatePath(`/admin/tanimlamalar/toptancilar/${purchase.supplierId}`);
+    revalidatePath("/admin/malzeme-alimlari");
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
+  }
+}
+
+// Alım ödeme durumunu değiştir (Açık ↔ Ödendi)
+export async function togglePurchasePaymentStatus(id: string) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) return { success: false, error: 'Oturum bulunamadı. Lütfen tekrar giriş yapın.' };
+
+    const purchase = await prisma.materialPurchase.findUnique({
+      where: { id },
+      include: { supplier: true, material: true },
+    });
+    if (!purchase) return { success: false, error: 'Malzeme alımı bulunamadı' };
+
+    const newStatus = purchase.paymentStatus === 'Odendi' ? 'Acik' : 'Odendi';
+    await prisma.materialPurchase.update({ where: { id }, data: { paymentStatus: newStatus } });
+
+    const materialLabel = purchase.material?.name || purchase.materialName || 'Malzeme';
+    await createAuditLog(
+      'UPDATE',
+      'MaterialPurchase',
+      id,
+      `Alım ödeme durumu: ${materialLabel} — ${purchase.paymentStatus === 'Odendi' ? 'Ödendi → Açık' : 'Açık → Ödendi'}`,
+      purchase.jobId
+    );
+
+    revalidatePath(`/admin/tanimlamalar/toptancilar/${purchase.supplierId}`);
+    revalidatePath("/admin/malzeme-alimlari");
+    revalidatePath(`/admin/is-emirleri/${purchase.jobId}`);
+    return { success: true, message: newStatus === 'Odendi' ? 'Alım ödendi olarak işaretlendi' : 'Alım açık olarak işaretlendi' };
+  } catch {
+    return { success: false, error: 'Durum güncellenemedi' };
   }
 }
 

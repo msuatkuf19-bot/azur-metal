@@ -24,6 +24,7 @@ interface WorkEntry {
     fullName: string;
     roleType: string;
     hourlyRateDefault: number;
+    dailyRate?: number;
   };
   date: string;
   hours: number;
@@ -37,7 +38,15 @@ interface Worker {
   fullName: string;
   roleType: string;
   hourlyRateDefault: number;
+  dailyRate?: number;
 }
+
+const DAY_OPTIONS = [
+  { value: 0.5, label: 'Yarım Gün' },
+  { value: 1, label: 'Tam Gün' },
+  { value: 1.5, label: '1,5 Gün' },
+  { value: 2, label: '2 Gün' },
+];
 
 interface WorkEntriesTabProps {
   job: any;
@@ -100,7 +109,7 @@ export default function WorkEntriesTab({ job, workEntries: initialEntries }: Wor
       workerId: workers[0]?.id || '',
       date: new Date().toISOString().split('T')[0],
       hours: 1,
-      hourlyRate: workers[0]?.hourlyRateDefault || 0,
+      hourlyRate: workers[0]?.dailyRate || workers[0]?.hourlyRateDefault || 0,
       description: '',
     });
     setIsDrawerOpen(true);
@@ -123,7 +132,7 @@ export default function WorkEntriesTab({ job, workEntries: initialEntries }: Wor
     setFormData({
       ...formData,
       workerId,
-      hourlyRate: worker?.hourlyRateDefault || 0,
+      hourlyRate: worker?.dailyRate || worker?.hourlyRateDefault || 0,
     });
   };
 
@@ -195,12 +204,12 @@ export default function WorkEntriesTab({ job, workEntries: initialEntries }: Wor
     },
     {
       key: 'hours',
-      header: 'Saat',
-      render: (e: WorkEntry) => `${e.hours} saat`,
+      header: 'Gün',
+      render: (e: WorkEntry) => `${e.hours} gün`,
     },
     {
       key: 'hourlyRate',
-      header: 'Saat Ücreti',
+      header: 'Yevmiye',
       render: (e: WorkEntry) => formatCurrency(e.hourlyRate),
     },
     {
@@ -263,7 +272,7 @@ export default function WorkEntriesTab({ job, workEntries: initialEntries }: Wor
       <SummaryBar
         items={[
           { label: 'Toplam Kayıt', value: `${filteredEntries.length} kayıt` },
-          { label: 'Toplam Saat', value: `${totalHours.toFixed(1)} saat` },
+          { label: 'Toplam Gün', value: `${totalHours.toFixed(1)} gün` },
           { label: 'Toplam Maliyet', value: totalAmount, color: 'warning' },
         ]}
       />
@@ -346,17 +355,25 @@ export default function WorkEntriesTab({ job, workEntries: initialEntries }: Wor
           />
 
           <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Çalışma <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.hours}
+                onChange={(e) => setFormData({ ...formData, hours: parseFloat(e.target.value) || 1 })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                required
+              >
+                {DAY_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <Input
-              label="Saat"
-              type="number"
-              min="0.5"
-              step="0.5"
-              value={formData.hours}
-              onChange={(e) => setFormData({ ...formData, hours: parseFloat(e.target.value) || 0 })}
-              required
-            />
-            <Input
-              label="Saat Ücreti (₺)"
+              label="Yevmiye (₺)"
               type="number"
               min="0"
               step="0.01"
@@ -375,7 +392,7 @@ export default function WorkEntriesTab({ job, workEntries: initialEntries }: Wor
               </span>
             </div>
             <p className="text-sm text-gray-500 mt-1">
-              {formData.hours} saat × {formatCurrency(formData.hourlyRate)}
+              {formData.hours} gün × {formatCurrency(formData.hourlyRate)}
             </p>
           </div>
 

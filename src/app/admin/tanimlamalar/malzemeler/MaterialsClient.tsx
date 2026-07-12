@@ -16,6 +16,7 @@ import {
 } from '@/app/actions/materials';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { exportToPdf, PdfSection } from '@/lib/pdf-export';
 
 interface Material {
   id: string;
@@ -192,6 +193,37 @@ export default function MaterialsClient({ initialData }: MaterialsClientProps) {
     },
   ];
 
+  const handleExportPdf = () => {
+    const sections: PdfSection[] = [
+      {
+        title: `Malzeme Listesi (${filteredMaterials.length})`,
+        type: 'table',
+        data: {
+          columns: [
+            { header: 'Malzeme Adı', key: 'ad', bold: true },
+            { header: 'Birim', key: 'birim' },
+            { header: 'Varsayılan KDV', key: 'kdv', align: 'right' as const },
+            { header: 'Alım Sayısı', key: 'alim', align: 'right' as const },
+            { header: 'Durum', key: 'durum' },
+          ],
+          rows: filteredMaterials.map((m) => ({
+            ad: m.name,
+            birim: UNIT_LABELS[m.unit as keyof typeof UNIT_LABELS] || m.unit,
+            kdv: `%${m.defaultVatRate}`,
+            alim: m._count.purchases.toString(),
+            durum: m.isActive ? 'Aktif' : 'Pasif',
+          })),
+        },
+      },
+    ];
+
+    exportToPdf({
+      title: 'Malzeme Raporu',
+      subtitle: `${filteredMaterials.length} malzeme`,
+      sections,
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Actions */}
@@ -201,12 +233,20 @@ export default function MaterialsClient({ initialData }: MaterialsClientProps) {
             Toplam {filteredMaterials.length} malzeme
           </p>
         </div>
-        <Button onClick={openCreateDrawer}>
-          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Yeni Malzeme
-        </Button>
+        <div className="flex space-x-2">
+          <Button variant="secondary" onClick={handleExportPdf}>
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Rapor Al
+          </Button>
+          <Button onClick={openCreateDrawer}>
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Yeni Malzeme
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

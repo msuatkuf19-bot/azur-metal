@@ -18,6 +18,7 @@ import {
 import { formatCurrency, formatDate, formatDateTime, parseEtiketler } from '@/lib/utils';
 import { updateJobStatus, deleteBusinessJob } from '@/app/actions/business-jobs';
 import toast from 'react-hot-toast';
+import { exportToPdf, PdfSection } from '@/lib/pdf-export';
 
 // Tab Components
 import GeneralTab from './tabs/GeneralTab';
@@ -83,6 +84,133 @@ export default function ProjectDetailClient({ data, formData }: ProjectDetailCli
     if (financials.netProfit > 0) return 'text-emerald-600';
     if (financials.netProfit < 0) return 'text-red-600';
     return 'text-gray-600';
+  };
+
+  const handleExportPdf = () => {
+    const giderler = project.payments?.filter((p: any) => p.tip === 'Gider') || [];
+    const tahsilatlar = project.payments?.filter((p: any) => p.tip === 'Tahsilat') || [];
+
+    const sections: PdfSection[] = [
+      {
+        title: 'Proje Bilgileri',
+        type: 'info-grid',
+        data: [
+          { label: 'Proje', value: project.projeAdi },
+          { label: 'Ref. Kodu', value: project.referansKodu },
+          { label: 'İş Tipi', value: project.isTipi || '-' },
+          { label: 'Durum', value: JOB_STATUS_LABELS[project.durum as keyof typeof JOB_STATUS_LABELS] || project.durum },
+          { label: 'Müşteri', value: `${project.musteriAdi} ${project.musteriSoyadi || ''}`.trim() },
+          { label: 'Telefon', value: project.telefon || '-' },
+        ],
+      },
+      {
+        title: 'Finansal Özet',
+        type: 'summary-cards',
+        data: [
+          { label: 'Tahsilat', value: formatCurrency(financials.totalCollection), color: 'positive' },
+          { label: 'İşçilik', value: formatCurrency(financials.laborCostTotal), color: 'orange' },
+          { label: 'Malzeme', value: formatCurrency(financials.materialCostTotal), color: 'orange' },
+          { label: 'Diğer Gider', value: formatCurrency(financials.totalPaymentExpense), color: 'negative' },
+          { label: 'Toplam Maliyet', value: formatCurrency(financials.totalProjectCost), color: 'neutral' },
+          { label: 'Net Kâr', value: formatCurrency(financials.netProfit), color: financials.netProfit >= 0 ? 'positive' : 'negative' },
+        ],
+      },
+      { type: 'divider' },
+      {
+        title: `İşçilik Kayıtları (${project.workEntries?.length || 0})`,
+        type: 'table',
+        data: {
+          columns: [
+            { header: 'Tarih', key: 'tarih' },
+            { header: 'Çalışan', key: 'calisan', bold: true },
+            { header: 'Gün', key: 'gun', align: 'right' as const },
+            { header: 'Yevmiye', key: 'yevmiye', align: 'right' as const },
+            { header: 'Tutar', key: 'tutar', align: 'right' as const },
+          ],
+          rows: (project.workEntries || []).map((e: any) => ({
+            tarih: formatDate(e.date),
+            calisan: e.worker?.fullName || '-',
+            gun: `${e.hours} gün`,
+            yevmiye: formatCurrency(e.hourlyRate),
+            tutar: formatCurrency(e.totalAmount),
+          })),
+          footer: {
+            tarih: 'TOPLAM', calisan: '', gun: '', yevmiye: '',
+            tutar: formatCurrency(financials.laborCostTotal),
+          },
+        },
+      },
+      {
+        title: `Malzeme Alımları (${project.materialPurchases?.length || 0})`,
+        type: 'table',
+        data: {
+          columns: [
+            { header: 'Tarih', key: 'tarih' },
+            { header: 'Malzeme', key: 'malzeme', bold: true },
+            { header: 'Toptancı', key: 'toptanci' },
+            { header: 'Miktar', key: 'miktar', align: 'right' as const },
+            { header: 'Tutar', key: 'tutar', align: 'right' as const },
+          ],
+          rows: (project.materialPurchases || []).map((p: any) => ({
+            tarih: formatDate(p.purchaseDate),
+            malzeme: p.material?.name || p.materialName || '-',
+            toptanci: p.supplier?.name || '-',
+            miktar: `${p.quantity} ${p.unit}`,
+            tutar: formatCurrency(p.totalAmount),
+          })),
+          footer: {
+            tarih: 'TOPLAM', malzeme: '', toptanci: '', miktar: '',
+            tutar: formatCurrency(financials.materialCostTotal),
+          },
+        },
+      },
+      {
+        title: `Giderler (${giderler.length})`,
+        type: 'table',
+        data: {
+          columns: [
+            { header: 'Tarih', key: 'tarih' },
+            { header: 'Açıklama', key: 'aciklama' },
+            { header: 'Tutar', key: 'tutar', align: 'right' as const },
+          ],
+          rows: giderler.map((p: any) => ({
+            tarih: formatDate(p.tarih),
+            aciklama: p.aciklama || '-',
+            tutar: formatCurrency(p.tutar),
+          })),
+          footer: {
+            tarih: 'TOPLAM', aciklama: '',
+            tutar: formatCurrency(financials.totalPaymentExpense),
+          },
+        },
+      },
+      {
+        title: `Tahsilatlar (${tahsilatlar.length})`,
+        type: 'table',
+        data: {
+          columns: [
+            { header: 'Tarih', key: 'tarih' },
+            { header: 'Açıklama', key: 'aciklama' },
+            { header: 'Tutar', key: 'tutar', align: 'right' as const },
+          ],
+          rows: tahsilatlar.map((p: any) => ({
+            tarih: formatDate(p.tarih),
+            aciklama: p.aciklama || '-',
+            tutar: formatCurrency(p.tutar),
+          })),
+          footer: {
+            tarih: 'TOPLAM', aciklama: '',
+            tutar: formatCurrency(financials.totalCollection),
+          },
+        },
+      },
+    ];
+
+    exportToPdf({
+      title: `Proje Raporu: ${project.projeAdi}`,
+      subtitle: `${project.referansKodu} • ${JOB_STATUS_LABELS[project.durum as keyof typeof JOB_STATUS_LABELS] || project.durum}`,
+      sections,
+    });
   };
 
   const tabs = [
@@ -192,6 +320,9 @@ export default function ProjectDetailClient({ data, formData }: ProjectDetailCli
             <Badge className={JOB_PRIORITY_COLORS[project.oncelik as keyof typeof JOB_PRIORITY_COLORS]}>
               {JOB_PRIORITY_LABELS[project.oncelik as keyof typeof JOB_PRIORITY_LABELS]}
             </Badge>
+            {project.isTipi && (
+              <Badge className="bg-indigo-100 text-indigo-800">{project.isTipi}</Badge>
+            )}
             {etiketler.map((tag: string) => (
               <Badge key={tag} variant="info">{tag}</Badge>
             ))}
@@ -199,6 +330,12 @@ export default function ProjectDetailClient({ data, formData }: ProjectDetailCli
         </div>
 
         <div className="flex space-x-2">
+          <Button variant="secondary" onClick={handleExportPdf}>
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Rapor Al
+          </Button>
           <Link href={`/admin/projeler/${project.id}/duzenle`}>
             <Button variant="secondary">
               <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

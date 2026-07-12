@@ -1,65 +1,36 @@
 import { prisma } from '@/lib/prisma';
 import { notFound } from 'next/navigation';
+import { getSupplierAccount } from '@/lib/supplier-account';
 import SupplierDetailClient from './SupplierDetailClient';
 
-async function getSupplierData(id: string) {
-  const supplier = await prisma.supplier.findUnique({ where: { id } });
-  if (!supplier) notFound();
+async function getSupplierPageData(id: string) {
+  const [account, materials] = await Promise.all([
+    getSupplierAccount(id),
+    prisma.material.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    }),
+  ]);
 
-  const purchases = await prisma.materialPurchase.findMany({
-    where: { supplierId: id },
-    include: {
-      job: {
-        select: {
-          id: true,
-          referansKodu: true,
-          musteriAdi: true,
-          musteriSoyadi: true,
-          firmaAdi: true,
-        },
-      },
-      material: true,
+  if (!account) notFound();
+
+  const { supplier, purchases, supplierPayments, ledger, customerBreakdown, projectBreakdown, materialBreakdown, summary } = account;
+
+  const purchaseIds = purchases.map((p) => p.id);
+  const paymentIds = supplierPayments.map((p) => p.id);
+  const auditLogs = await prisma.auditLog.findMany({
+    where: {
+      OR: [
+        { entity: 'Supplier', entityId: id },
+        { entity: 'MaterialPurchase', entityId: { in: purchaseIds } },
+        { entity: 'SupplierPayment', entityId: { in: paymentIds } },
+      ],
     },
-    orderBy: { purchaseDate: 'desc' },
+    include: { user: { select: { id: true, adSoyad: true } } },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
   });
-
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const overallTotal = purchases.reduce((s, p) => s + p.totalAmount, 0);
-  const thisMonthTotal = purchases
-    .filter(p => p.purchaseDate >= startOfMonth)
-    .reduce((s, p) => s + p.totalAmount, 0);
-
-  // Benzersiz projeler
-  const projectMap = new Map<string, { id: string; name: string; refKodu: string }>();
-  purchases.forEach(p => {
-    if (!projectMap.has(p.jobId)) {
-      projectMap.set(p.jobId, {
-        id: p.job.id,
-        name: p.job.firmaAdi || `${p.job.musteriAdi} ${p.job.musteriSoyadi || ''}`.trim(),
-        refKodu: p.job.referansKodu,
-      });
-    }
-  });
-
-  // Benzersiz müşteriler
-  const customerSet = new Set<string>();
-  purchases.forEach(p => {
-    customerSet.add(p.job.firmaAdi || p.job.musteriAdi);
-  });
-
-  // Serialize dates
-  const serializedPurchases = purchases.map(p => ({
-    ...p,
-    purchaseDate: p.purchaseDate.toISOString(),
-    createdAt: p.createdAt.toISOString(),
-    updatedAt: p.updatedAt.toISOString(),
-    material: p.material ? {
-      ...p.material,
-      createdAt: p.material.createdAt.toISOString(),
-      updatedAt: p.material.updatedAt.toISOString(),
-    } : null,
-  }));
 
   return {
     supplier: {
@@ -67,21 +38,55 @@ async function getSupplierData(id: string) {
       createdAt: supplier.createdAt.toISOString(),
       updatedAt: supplier.updatedAt.toISOString(),
     },
-    purchases: serializedPurchases,
-    filters: {
-      projects: Array.from(projectMap.values()),
-      customers: Array.from(customerSet),
-    },
-    summary: {
-      overallTotal,
-      thisMonthTotal,
-      totalPurchases: purchases.length,
-    },
+    purchases: purchases.map((p) => ({
+      id: p.id,
+      jobId: p.jobId,
+      job: p.job,
+      materialId: p.materialId,
+      materialName: p.material?.name || p.materialName || '-',
+      quantity: p.quantity,
+      unit: p.unit,
+      unitPrice: p.unitPrice,
+      vatRate: p.vatRate,
+      totalAmount: p.totalAmount,
+      note: p.note,
+      invoiceNo: p.invoiceNo,
+      paymentStatus: p.paymentStatus,
+      purchaseDate: p.purchaseDate.toISOString(),
+    })),
+    payments: supplierPayments.map((p) => ({
+      id: p.id,
+      jobId: p.jobId,
+      job: p.job,
+      amount: p.amount,
+      paymentDate: p.paymentDate.toISOString(),
+      paymentMethod: p.paymentMethod,
+      description: p.description,
+    })),
+    ledger,
+    customerBreakdown,
+    projectBreakdown,
+    materialBreakdown,
+    summary,
+    materials,
+    jobs: Array.from(new Map(purchases.filter((p) => p.job).map((p) => [p.jobId, {
+      id: p.jobId,
+      label: `${p.job.firmaAdi || p.job.musteriAdi} (${p.job.referansKodu})`,
+    }])).values()),
+    auditLogs: auditLogs.map((l) => ({
+      id: l.id,
+      action: l.action,
+      entity: l.entity,
+      entityId: l.entityId,
+      details: l.details,
+      createdAt: l.createdAt.toISOString(),
+      user: l.user,
+    })),
   };
 }
 
 export default async function SupplierDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const data = await getSupplierData(id);
+  const data = await getSupplierPageData(id);
   return <SupplierDetailClient data={data} />;
 }

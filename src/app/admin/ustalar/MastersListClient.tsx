@@ -5,10 +5,65 @@ import { useRouter } from 'next/navigation';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { formatCurrency, formatPhone } from '@/lib/utils';
+import { exportToPdf, PdfSection } from '@/lib/pdf-export';
 
 export default function MastersListClient({ masters }: any) {
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
+
+  const handleExportPdf = () => {
+    const totalEarned = masters.reduce((s: number, m: any) => s + (m.summary?.totalEarned || 0), 0);
+    const totalPaid = masters.reduce((s: number, m: any) => s + (m.summary?.totalPaid || 0), 0);
+    const totalDebt = masters.reduce((s: number, m: any) => s + (m.summary?.remainingDebt || 0), 0);
+
+    const sections: PdfSection[] = [
+      {
+        title: 'Genel Özet',
+        type: 'summary-cards',
+        data: [
+          { label: 'Toplam Usta', value: masters.length.toString(), color: 'blue' },
+          { label: 'Toplam Hakediş', value: formatCurrency(totalEarned), color: 'positive' },
+          { label: 'Ödenen', value: formatCurrency(totalPaid), color: 'orange' },
+          { label: 'Kalan Borç', value: formatCurrency(totalDebt), color: totalDebt > 0 ? 'negative' : 'neutral' },
+        ],
+      },
+      { type: 'divider' },
+      {
+        title: `Usta Listesi (${masters.length})`,
+        type: 'table',
+        data: {
+          columns: [
+            { header: 'Ad Soyad', key: 'ad', bold: true },
+            { header: 'Telefon', key: 'telefon' },
+            { header: 'Uzmanlık', key: 'uzmanlik' },
+            { header: 'Hakediş', key: 'hakedis', align: 'right' as const },
+            { header: 'Ödenen', key: 'odenen', align: 'right' as const },
+            { header: 'Kalan Borç', key: 'borc', align: 'right' as const },
+          ],
+          rows: masters.map((m: any) => ({
+            ad: m.adSoyad,
+            telefon: m.telefon ? formatPhone(m.telefon) : '-',
+            uzmanlik: m.uzmanlik || '-',
+            hakedis: formatCurrency(m.summary?.totalEarned || 0),
+            odenen: formatCurrency(m.summary?.totalPaid || 0),
+            borc: formatCurrency(m.summary?.remainingDebt || 0),
+          })),
+          footer: {
+            ad: 'TOPLAM', telefon: '', uzmanlik: '',
+            hakedis: formatCurrency(totalEarned),
+            odenen: formatCurrency(totalPaid),
+            borc: formatCurrency(totalDebt),
+          },
+        },
+      },
+    ];
+
+    exportToPdf({
+      title: 'Ustalar Raporu',
+      subtitle: `${masters.length} usta`,
+      sections,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -18,12 +73,20 @@ export default function MastersListClient({ masters }: any) {
           <h1 className="text-2xl font-bold text-gray-900">Ustalar</h1>
           <p className="text-gray-600 mt-1">{masters.length} usta kayıtlı</p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Yeni Usta
-        </Button>
+        <div className="flex space-x-2">
+          <Button variant="secondary" onClick={handleExportPdf}>
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Rapor Al
+          </Button>
+          <Button onClick={() => setShowForm(true)}>
+            <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Yeni Usta
+          </Button>
+        </div>
       </div>
 
       {/* Masters List */}

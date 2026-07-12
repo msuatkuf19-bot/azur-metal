@@ -38,6 +38,41 @@ export function formatCurrency(amount: number, currency: 'TRY' | 'USD' | 'EUR' =
   return `${amount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${symbols[currency]}`;
 }
 
+// Para girişi parse: "12.500,50" → 12500.5 | "1500.75" → 1500.75 | "1500" → 1500
+// Türkçe (virgül ondalık, nokta binlik) ve standart girişleri destekler.
+export function parseMoney(input: string | number | null | undefined): number {
+  if (input === null || input === undefined) return NaN;
+  if (typeof input === 'number') return input;
+
+  let s = input.trim().replace(/[₺$€\s]/g, '');
+  if (!s) return NaN;
+
+  const hasComma = s.includes(',');
+  const hasDot = s.includes('.');
+
+  if (hasComma && hasDot) {
+    // Son ayraç ondalıktır: "12.500,50" veya "12,500.50"
+    if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      s = s.replace(/,/g, '');
+    }
+  } else if (hasComma) {
+    // "1500,50" → ondalık virgül
+    s = s.replace(',', '.');
+  } else if (hasDot) {
+    // "12.500" (binlik) mi "12.50" (ondalık) mı? 3 haneli son grup + birden çok nokta → binlik
+    const parts = s.split('.');
+    if (parts.length > 2 || (parts.length === 2 && parts[1].length === 3 && parts[0].length > 0)) {
+      // "1.500" veya "1.500.000" → binlik ayraç kabul et
+      s = parts.join('');
+    }
+  }
+
+  const n = parseFloat(s);
+  return isNaN(n) ? NaN : n;
+}
+
 // Telefon formatlama
 export function formatPhone(phone: string): string {
   const cleaned = phone.replace(/\D/g, '');

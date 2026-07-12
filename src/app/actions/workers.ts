@@ -81,6 +81,7 @@ export async function getActiveWorkers() {
         fullName: true,
         roleType: true,
         hourlyRateDefault: true,
+        dailyRate: true,
       },
     });
 

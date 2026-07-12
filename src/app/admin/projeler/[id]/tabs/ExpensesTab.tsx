@@ -1,9 +1,8 @@
 'use client';
 
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { PAYMENT_PARTY_LABELS, PAYMENT_METHOD_LABELS, EXPENSE_CATEGORY_LABELS } from '@/lib/constants';
+import { PAYMENT_METHOD_LABELS } from '@/lib/constants';
 
 interface ExpensesTabProps {
   project: any;
@@ -12,17 +11,6 @@ interface ExpensesTabProps {
 
 export default function ExpensesTab({ project, financials }: ExpensesTabProps) {
   const giderler = project.payments?.filter((p: any) => p.tip === 'Gider') || [];
-  
-  // Kategori bazlı gruplama
-  const categoryTotals = giderler.reduce((acc: any, payment: any) => {
-    const category = payment.taraf || 'Diger';
-    if (!acc[category]) {
-      acc[category] = { total: 0, count: 0 };
-    }
-    acc[category].total += payment.tutar;
-    acc[category].count += 1;
-    return acc;
-  }, {});
 
   return (
     <div className="space-y-6">
@@ -54,28 +42,6 @@ export default function ExpensesTab({ project, financials }: ExpensesTabProps) {
         </Card>
       </div>
 
-      {/* Category Breakdown */}
-      {Object.keys(categoryTotals).length > 0 && (
-        <Card>
-          <CardHeader>
-            <h3 className="text-lg font-semibold">Kategori Bazlı Giderler</h3>
-          </CardHeader>
-          <CardBody>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Object.entries(categoryTotals).map(([category, data]: [string, any]) => (
-                <div key={category} className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-500">
-                    {PAYMENT_PARTY_LABELS[category as keyof typeof PAYMENT_PARTY_LABELS] || category}
-                  </p>
-                  <p className="text-xl font-bold text-gray-900">{formatCurrency(data.total)}</p>
-                  <p className="text-xs text-gray-400">{data.count} işlem</p>
-                </div>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
-      )}
-
       {/* Expense List */}
       <Card>
         <CardHeader>
@@ -99,9 +65,8 @@ export default function ExpensesTab({ project, financials }: ExpensesTabProps) {
                 <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Taraf</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ödeme Yöntemi</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Açıklama</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ödeme Yöntemi</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Tutar</th>
                   </tr>
                 </thead>
@@ -109,10 +74,8 @@ export default function ExpensesTab({ project, financials }: ExpensesTabProps) {
                   {giderler.map((payment: any) => (
                     <tr key={payment.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 text-sm text-gray-900">{formatDate(payment.tarih)}</td>
-                      <td className="px-6 py-4">
-                        <Badge variant="default">
-                          {PAYMENT_PARTY_LABELS[payment.taraf as keyof typeof PAYMENT_PARTY_LABELS] || payment.taraf}
-                        </Badge>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {payment.aciklama || '-'}
                         {payment.master && (
                           <span className="ml-2 text-sm text-gray-500">{payment.master.adSoyad}</span>
                         )}
@@ -120,14 +83,13 @@ export default function ExpensesTab({ project, financials }: ExpensesTabProps) {
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {PAYMENT_METHOD_LABELS[payment.odemeYontemi as keyof typeof PAYMENT_METHOD_LABELS] || payment.odemeYontemi}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{payment.aciklama || '-'}</td>
                       <td className="px-6 py-4 text-right font-semibold text-red-600">{formatCurrency(payment.tutar)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot className="bg-gray-50 border-t">
                   <tr>
-                    <td colSpan={4} className="px-6 py-3 text-sm font-medium text-gray-700">Toplam</td>
+                    <td colSpan={3} className="px-6 py-3 text-sm font-medium text-gray-700">Toplam</td>
                     <td className="px-6 py-3 text-right font-bold text-red-600">{formatCurrency(financials.totalPaymentExpense)}</td>
                   </tr>
                 </tfoot>

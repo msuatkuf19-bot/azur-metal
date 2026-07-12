@@ -44,6 +44,7 @@ export default function WorkerDetailClient({ data }: WorkerDetailClientProps) {
     phone: worker.phone || '',
     roleType: worker.roleType,
     hourlyRateDefault: worker.hourlyRateDefault,
+    dailyRate: worker.dailyRate || 0,
     notes: worker.notes || '',
     isActive: worker.isActive,
   });
@@ -81,7 +82,7 @@ export default function WorkerDetailClient({ data }: WorkerDetailClientProps) {
         { label: 'Ad Soyad', value: worker.fullName },
         { label: 'Rol', value: WORKER_ROLE_LABELS[worker.roleType as keyof typeof WORKER_ROLE_LABELS] || worker.roleType },
         { label: 'Telefon', value: worker.phone ? formatPhone(worker.phone) : '-' },
-        { label: 'Varsayılan Saat Ücreti', value: formatCurrency(worker.hourlyRateDefault) + '/saat' },
+        { label: 'Yevmiye', value: formatCurrency(worker.dailyRate || worker.hourlyRateDefault) + '/gün' },
         { label: 'Durum', value: worker.isActive ? 'Aktif' : 'Pasif' },
         { label: 'Kayıt Tarihi', value: formatDate(worker.createdAt) },
       ],
@@ -96,7 +97,7 @@ export default function WorkerDetailClient({ data }: WorkerDetailClientProps) {
       type: 'summary-cards',
       data: [
         { label: 'Toplam Proje', value: summary.totalProjects.toString(), color: 'blue' },
-        { label: 'Toplam Saat', value: summary.totalHours.toFixed(1), color: 'blue', sub: `${summary.totalEntries} kayıt` },
+        { label: 'Toplam Gün', value: summary.totalHours.toFixed(1), color: 'blue', sub: `${summary.totalEntries} kayıt` },
         { label: 'Toplam Hakediş', value: formatCurrency(summary.totalEarned), color: 'positive' },
         { label: 'Ödenen', value: formatCurrency(summary.totalPaid), color: 'orange' },
         { label: 'Kalan Alacak', value: formatCurrency(summary.totalRemaining), color: summary.totalRemaining > 0 ? 'negative' : 'neutral' },
@@ -114,7 +115,7 @@ export default function WorkerDetailClient({ data }: WorkerDetailClientProps) {
             { header: 'Proje', key: 'proje', bold: true },
             { header: 'Ref. Kodu', key: 'refKod' },
             { header: 'Durum', key: 'durum' },
-            { header: 'Saat', key: 'saat', align: 'right' as const },
+            { header: 'Gün', key: 'saat', align: 'right' as const },
             { header: 'Hakediş', key: 'hakedis', align: 'right' as const },
             { header: 'Ödenen', key: 'odenen', align: 'right' as const },
             { header: 'Kalan', key: 'kalan', align: 'right' as const },
@@ -147,8 +148,8 @@ export default function WorkerDetailClient({ data }: WorkerDetailClientProps) {
           columns: [
             { header: 'Tarih', key: 'tarih' },
             { header: 'Proje', key: 'proje' },
-            { header: 'Saat', key: 'saat', align: 'right' as const },
-            { header: 'Saat Ücreti', key: 'ucret', align: 'right' as const },
+            { header: 'Gün', key: 'saat', align: 'right' as const },
+            { header: 'Yevmiye', key: 'ucret', align: 'right' as const },
             { header: 'Açıklama', key: 'aciklama' },
             { header: 'Toplam', key: 'toplam', align: 'right' as const },
           ],
@@ -245,7 +246,7 @@ export default function WorkerDetailClient({ data }: WorkerDetailClientProps) {
           <CardBody>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Toplam Saat</p>
+                <p className="text-sm text-gray-500">Toplam Gün</p>
                 <p className="text-2xl font-bold text-purple-600 mt-1">{summary.totalHours.toFixed(1)}</p>
                 <p className="text-xs text-gray-400">{summary.totalEntries} kayıt</p>
               </div>
@@ -317,8 +318,8 @@ export default function WorkerDetailClient({ data }: WorkerDetailClientProps) {
           </CardHeader>
           <CardBody className="space-y-4">
             <div>
-              <p className="text-sm text-gray-500">Varsayılan Saat Ücreti</p>
-              <p className="text-xl font-bold text-primary-600">{formatCurrency(worker.hourlyRateDefault)}/saat</p>
+              <p className="text-sm text-gray-500">Yevmiye</p>
+              <p className="text-xl font-bold text-primary-600">{formatCurrency(worker.dailyRate || worker.hourlyRateDefault)}/gün</p>
             </div>
             {worker.phone && (
               <div>
@@ -407,7 +408,7 @@ export default function WorkerDetailClient({ data }: WorkerDetailClientProps) {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proje</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Kayıt</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Saat</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Gün</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Hakediş</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ödenen</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Kalan</th>
@@ -483,8 +484,8 @@ export default function WorkerDetailClient({ data }: WorkerDetailClientProps) {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proje</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Saat</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Saat Ücreti</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Gün</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Yevmiye</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Toplam</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Açıklama</th>
                   </tr>
@@ -502,7 +503,7 @@ export default function WorkerDetailClient({ data }: WorkerDetailClientProps) {
                           {entry.job.firmaAdi || entry.job.musteriAdi}
                         </Link>
                       </td>
-                      <td className="px-6 py-4 text-right">{entry.hours} saat</td>
+                      <td className="px-6 py-4 text-right">{entry.hours} gün</td>
                       <td className="px-6 py-4 text-right text-gray-600">{formatCurrency(entry.hourlyRate)}</td>
                       <td className="px-6 py-4 text-right font-semibold text-emerald-600">{formatCurrency(entry.totalAmount)}</td>
                       <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{entry.description || '-'}</td>
@@ -552,12 +553,12 @@ export default function WorkerDetailClient({ data }: WorkerDetailClientProps) {
           </div>
 
           <Input
-            label="Varsayılan Saat Ücreti (₺)"
+            label="Yevmiye (₺)"
             type="number"
             min="0"
             step="0.01"
-            value={formData.hourlyRateDefault}
-            onChange={(e) => setFormData({ ...formData, hourlyRateDefault: parseFloat(e.target.value) || 0 })}
+            value={formData.dailyRate}
+            onChange={(e) => setFormData({ ...formData, dailyRate: parseFloat(e.target.value) || 0 })}
           />
 
           <TextArea
