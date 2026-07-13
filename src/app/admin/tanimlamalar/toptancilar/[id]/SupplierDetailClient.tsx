@@ -11,7 +11,7 @@ import { Input, TextArea } from '@/components/ui/Input';
 import { formatCurrency, formatDate, formatDateTime, formatPhone, parseMoney } from '@/lib/utils';
 import { PAYMENT_METHOD_LABELS, PURCHASE_PAYMENT_STATUS_LABELS, PURCHASE_PAYMENT_STATUS_COLORS, supplierBalanceStatus } from '@/lib/constants';
 import { createSupplierPayment, updateSupplierPayment, deleteSupplierPayment } from '@/app/actions/supplier-payments';
-import { togglePurchasePaymentStatus, deleteMaterialPurchase } from '@/app/actions/material-purchases';
+import { togglePurchasePaymentStatus, deleteMaterialPurchase, deleteSupplierMaterialGroup } from '@/app/actions/material-purchases';
 import { updateSupplier } from '@/app/actions/suppliers';
 import { exportToPdf, PdfSection } from '@/lib/pdf-export';
 import toast from 'react-hot-toast';
@@ -312,6 +312,13 @@ export default function SupplierDetailClient({ data }: { data: any }) {
     if (!confirm('Bu alım kaydı silinsin mi? Bu işlem geri alınamaz.')) return;
     const r = await deleteMaterialPurchase(id);
     if (r.success) { toast.success('Alım kaydı silindi'); router.refresh(); }
+    else toast.error(r.error || 'Hata oluştu');
+  };
+
+  const handleDeleteMaterialGroup = async (name: string, purchaseCount: number) => {
+    if (!confirm(`"${name}" malzemesine ait ${purchaseCount} alım kaydı tamamen silinsin mi? Bu işlem geri alınamaz.`)) return;
+    const r = await deleteSupplierMaterialGroup(supplier.id, name);
+    if (r.success) { toast.success('Malzeme kayıtları silindi'); router.refresh(); }
     else toast.error(r.error || 'Hata oluştu');
   };
 
@@ -767,6 +774,7 @@ export default function SupplierDetailClient({ data }: { data: any }) {
                       <th className="px-4 py-2.5 text-right text-xs font-medium text-slate-500 uppercase">Toplam Miktar</th>
                       <th className="px-4 py-2.5 text-right text-xs font-medium text-slate-500 uppercase">İşlem Sayısı</th>
                       <th className="px-4 py-2.5 text-right text-xs font-medium text-slate-500 uppercase">Toplam Tutar</th>
+                      <th className="px-4 py-2.5"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -776,6 +784,9 @@ export default function SupplierDetailClient({ data }: { data: any }) {
                         <td className="px-4 py-2.5 text-right">{m.quantity.toLocaleString('tr-TR')} {m.unit}</td>
                         <td className="px-4 py-2.5 text-right">{m.purchaseCount}</td>
                         <td className="px-4 py-2.5 text-right font-semibold text-indigo-600">{formatCurrency(m.total)}</td>
+                        <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteMaterialGroup(m.name, m.purchaseCount)}>Sil</Button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

@@ -301,6 +301,63 @@ export async function deleteMaterialPurchase(id: string) {
   }
 }
 
+// Toptancıya ait bir malzemenin tüm alım kayıtlarını sil (Malzemeler sekmesi kırılım silme)
+export async function deleteSupplierMaterialGroup(supplierId: string, materialName: string) {
+  try {
+    const purchases = await prisma.materialPurchase.findMany({
+      where: {
+        supplierId,
+        OR: [
+          { material: { name: materialName } },
+          { materialName },
+        ],
+      },
+      include: { supplier: true },
+    });
+
+    if (purchases.length === 0) {
+      return { success: false, error: 'Silinecek alım kaydı bulunamadı' };
+    }
+
+    const ids = purchases.map((p) => p.id);
+    const jobIds = Array.from(new Set(purchases.map((p) => p.jobId)));
+    const supplierName = purchases[0].supplier.name;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.materialPurchase.deleteMany({ where: { id: { in: ids } } });
+
+      for (const jobId of jobIds) {
+        const materialResult = await tx.materialPurchase.aggregate({
+          where: { jobId },
+          _sum: { totalAmount: true },
+        });
+
+        await tx.businessJob.update({
+          where: { id: jobId },
+          data: { materialCostTotal: materialResult._sum.totalAmount || 0 },
+        });
+      }
+    });
+
+    await createAuditLog(
+      'DELETE',
+      'MaterialPurchase',
+      undefined,
+      `Malzeme kırılımı silindi: ${materialName} - ${supplierName} (${ids.length} alım kaydı)`,
+    );
+
+    for (const jobId of jobIds) {
+      revalidatePath(`/admin/is-emirleri/${jobId}`);
+      revalidatePath(`/admin/projeler/${jobId}`);
+    }
+    revalidatePath(`/admin/tanimlamalar/toptancilar/${supplierId}`);
+    revalidatePath('/admin/malzeme-alimlari');
+    return { success: true, count: ids.length };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 // Alım ödeme durumunu değiştir (Açık ↔ Ödendi)
 export async function togglePurchasePaymentStatus(id: string) {
   try {
