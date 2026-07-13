@@ -6,13 +6,15 @@ import { useRouter } from 'next/navigation';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Input, TextArea } from '@/components/ui/Input';
 import { StatCard } from '@/components/ui/StatCard';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Drawer } from '@/components/ui/Drawer';
+import { DeleteConfirmDialog } from '@/components/ui/DeleteConfirmDialog';
 import { formatCurrency, formatDate, parseMoney } from '@/lib/utils';
-import { PURCHASE_PAYMENT_STATUS_LABELS, PURCHASE_PAYMENT_STATUS_COLORS } from '@/lib/constants';
-import { togglePurchasePaymentStatus, deleteMaterialPurchase } from '@/app/actions/material-purchases';
+import { PURCHASE_PAYMENT_STATUS_LABELS, PURCHASE_PAYMENT_STATUS_COLORS, UNIT_OPTIONS, VAT_RATE_OPTIONS } from '@/lib/constants';
+import { togglePurchasePaymentStatus, deleteMaterialPurchase, updateMaterialPurchase } from '@/app/actions/material-purchases';
 import toast from 'react-hot-toast';
 
 function jobCustomerName(job: any): string {
@@ -63,10 +65,13 @@ export default function MalzemeAlimlariClient({ data }: { data: any }) {
     else toast.error(r.error || 'Hata oluştu');
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bu alım kaydı silinsin mi?')) return;
-    const r = await deleteMaterialPurchase(id);
-    if (r.success) { toast.success('Alım kaydı silindi'); router.refresh(); }
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [editDrawer, setEditDrawer] = useState<{ open: boolean; purchase: any | null }>({ open: false, purchase: null });
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const r = await deleteMaterialPurchase(deleteTarget.id);
+    if (r.success) { toast.success('Alım kaydı silindi'); setDeleteTarget(null); router.refresh(); }
     else toast.error(r.error || 'Hata oluştu');
   };
 
@@ -170,7 +175,8 @@ export default function MalzemeAlimlariClient({ data }: { data: any }) {
                         </button>
                       </td>
                       <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)}>Sil</Button>
+                        <Button variant="ghost" size="sm" onClick={() => setEditDrawer({ open: true, purchase: p })}>Düzenle</Button>
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => setDeleteTarget(p)}>Sil</Button>
                       </td>
                     </tr>
                   ))}
@@ -187,6 +193,111 @@ export default function MalzemeAlimlariClient({ data }: { data: any }) {
           )}
         </CardBody>
       </Card>
+
+      <PurchaseEditDrawer
+        state={editDrawer}
+        onClose={() => setEditDrawer({ open: false, purchase: null })}
+        onSaved={() => { setEditDrawer({ open: false, purchase: null }); router.refresh(); }}
+      />
+
+      <DeleteConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Alım Kaydı Silinecek"
+        description={deleteTarget ? `${formatDate(deleteTarget.purchaseDate)} tarihli "${deleteTarget.materialName}" alımı (${formatCurrency(deleteTarget.totalAmount)}) silinecek. Proje maliyeti yeniden hesaplanır.` : ''}
+      />
     </div>
+  );
+}
+
+function PurchaseEditDrawer({ state, onClose, onSaved }: { state: { open: boolean; purchase: any | null }; onClose: () => void; onSaved: () => void }) {
+  const { open, purchase } = state;
+  const [isLoading, setIsLoading] = useState(false);
+  const [form, setForm] = useState<any>(null);
+
+  const formKey = `${open}-${purchase?.id || 'none'}`;
+  const [lastKey, setLastKey] = useState('');
+  if (open && purchase && lastKey !== formKey) {
+    setLastKey(formKey);
+    setForm({
+      quantity: purchase.quantity.toString(),
+      unit: purchase.unit,
+      unitPrice: purchase.unitPrice.toString(),
+      vatRate: purchase.vatRate != null ? purchase.vatRate.toString() : '',
+      purchaseDate: purchase.purchaseDate.split('T')[0],
+      invoiceNo: purchase.invoiceNo || '',
+      note: purchase.note || '',
+    });
+  }
+
+  if (!form || !purchase) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLoading) return;
+
+    const quantity = parseMoney(form.quantity);
+    const unitPrice = parseMoney(form.unitPrice);
+    if (isNaN(quantity) || quantity <= 0) { toast.error('Miktar sıfırdan büyük olmalı'); return; }
+    if (isNaN(unitPrice) || unitPrice < 0) { toast.error('Birim fiyat 0 veya pozitif olmalı'); return; }
+
+    setIsLoading(true);
+    const r = await updateMaterialPurchase(purchase.id, {
+      quantity,
+      unit: form.unit,
+      unitPrice,
+      vatRate: form.vatRate === '' ? undefined : Number(form.vatRate),
+      purchaseDate: form.purchaseDate,
+      invoiceNo: form.invoiceNo || undefined,
+      note: form.note || undefined,
+    });
+    setIsLoading(false);
+    if (r.success) { toast.success('Alım kaydı güncellendi'); onSaved(); }
+    else toast.error(r.error || 'Hata oluştu');
+  };
+
+  return (
+    <Drawer isOpen={open} onClose={onClose} title="Alım Kaydı Düzenle" size="md">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="rounded-lg bg-slate-50 border border-slate-200 px-4 py-3">
+          <p className="text-sm font-medium text-slate-800">{purchase.materialName}</p>
+          <p className="text-xs text-slate-500">{purchase.supplierName}</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Input label="Miktar" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} required />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Birim</label>
+            <select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              {UNIT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Input label="Birim Fiyat (₺)" value={form.unitPrice} onChange={(e) => setForm({ ...form, unitPrice: e.target.value })} required />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">KDV Oranı</label>
+            <select value={form.vatRate} onChange={(e) => setForm({ ...form, vatRate: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">KDV yok</option>
+              {VAT_RATE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Input label="Alım Tarihi" type="date" value={form.purchaseDate} onChange={(e) => setForm({ ...form, purchaseDate: e.target.value })} required />
+          <Input label="Fatura No" value={form.invoiceNo} onChange={(e) => setForm({ ...form, invoiceNo: e.target.value })} />
+        </div>
+
+        <TextArea label="Not" value={form.note} onChange={(e: any) => setForm({ ...form, note: e.target.value })} />
+
+        <div className="flex space-x-3 pt-4 border-t">
+          <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>Vazgeç</Button>
+          <Button type="submit" className="flex-1" disabled={isLoading}>{isLoading ? 'Kaydediliyor...' : 'Güncelle'}</Button>
+        </div>
+      </form>
+    </Drawer>
   );
 }

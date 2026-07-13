@@ -11,10 +11,11 @@ import { StatCard } from '@/components/ui/StatCard';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Drawer } from '@/components/ui/Drawer';
+import { DeleteConfirmDialog } from '@/components/ui/DeleteConfirmDialog';
 import { MonthPicker } from '@/components/ui/MonthPicker';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { ATTENDANCE_TYPE_LABELS, ATTENDANCE_TYPE_COLORS, ATTENDANCE_TYPE_MULTIPLIERS, type AttendanceType } from '@/lib/constants';
-import { createBulkAttendance } from '@/app/actions/attendance';
+import { createBulkAttendance, updateAttendance, deleteAttendance } from '@/app/actions/attendance';
 import toast from 'react-hot-toast';
 
 function jobCustomerName(job: any): string {
@@ -31,6 +32,15 @@ export default function YoklamaClient({ data }: { data: any }) {
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [workerFilter, setWorkerFilter] = useState('');
   const [bulkDrawerOpen, setBulkDrawerOpen] = useState(false);
+  const [editDrawer, setEditDrawer] = useState<{ open: boolean; attendance: any | null }>({ open: false, attendance: null });
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const r = await deleteAttendance(deleteTarget.id);
+    if (r.success) { toast.success(r.message || 'Yoklama silindi'); setDeleteTarget(null); router.refresh(); }
+    else toast.error(r.error || 'Hata oluştu');
+  };
 
   const monthAttendances = useMemo(() => {
     return attendances.filter((a: any) => {
@@ -99,6 +109,7 @@ export default function YoklamaClient({ data }: { data: any }) {
                     <th className="px-4 py-2.5 text-right text-xs font-medium text-slate-500 uppercase">Ekstra</th>
                     <th className="px-4 py-2.5 text-right text-xs font-medium text-slate-500 uppercase">Hakediş</th>
                     <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500 uppercase">Not</th>
+                    <th className="px-4 py-2.5"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -117,6 +128,10 @@ export default function YoklamaClient({ data }: { data: any }) {
                         <td className="px-4 py-2.5 text-right text-orange-600">{a.extraAmount ? formatCurrency(a.extraAmount) : '-'}</td>
                         <td className="px-4 py-2.5 text-right font-semibold text-emerald-600">{formatCurrency(mult * a.dailyRateSnapshot + (a.extraAmount || 0))}</td>
                         <td className="px-4 py-2.5 text-slate-500 max-w-[200px] truncate">{[a.extraDescription, a.note].filter(Boolean).join(' • ') || '-'}</td>
+                        <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                          <Button variant="ghost" size="sm" onClick={() => setEditDrawer({ open: true, attendance: a })}>Düzenle</Button>
+                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => setDeleteTarget(a)}>Sil</Button>
+                        </td>
                       </tr>
                     );
                   })}
@@ -134,7 +149,110 @@ export default function YoklamaClient({ data }: { data: any }) {
         jobs={jobs}
         onSaved={() => { setBulkDrawerOpen(false); router.refresh(); }}
       />
+
+      <AttendanceEditDrawer
+        state={editDrawer}
+        jobs={jobs}
+        onClose={() => setEditDrawer({ open: false, attendance: null })}
+        onSaved={() => { setEditDrawer({ open: false, attendance: null }); router.refresh(); }}
+      />
+
+      <DeleteConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Yoklama Kaydı Silinecek"
+        description={deleteTarget ? `${deleteTarget.workerName} — ${formatDate(deleteTarget.date)} tarihli yoklama kaydı silinecek. Personel hakedişi yeniden hesaplanır.` : ''}
+      />
     </div>
+  );
+}
+
+function AttendanceEditDrawer({ state, jobs, onClose, onSaved }: { state: { open: boolean; attendance: any | null }; jobs: any[]; onClose: () => void; onSaved: () => void }) {
+  const { open, attendance } = state;
+  const [isLoading, setIsLoading] = useState(false);
+  const [form, setForm] = useState<any>(null);
+
+  const formKey = `${open}-${attendance?.id || 'none'}`;
+  const [lastKey, setLastKey] = useState('');
+  if (open && attendance && lastKey !== formKey) {
+    setLastKey(formKey);
+    setForm({
+      date: attendance.date.split('T')[0],
+      type: attendance.type,
+      jobId: attendance.jobId || '',
+      dailyRate: attendance.dailyRateSnapshot.toString(),
+      extraAmount: attendance.extraAmount ? attendance.extraAmount.toString() : '',
+      extraDescription: attendance.extraDescription || '',
+      note: attendance.note || '',
+    });
+  }
+
+  if (!form || !attendance) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLoading) return;
+
+    setIsLoading(true);
+    const r = await updateAttendance(attendance.id, {
+      date: form.date,
+      type: form.type,
+      jobId: form.jobId || null,
+      dailyRate: Number(form.dailyRate) || 0,
+      extraAmount: Number(form.extraAmount) || 0,
+      extraDescription: form.extraDescription || undefined,
+      note: form.note || undefined,
+    });
+    setIsLoading(false);
+    if (r.success) { toast.success(r.message || 'Yoklama güncellendi'); onSaved(); }
+    else toast.error(r.error || 'Hata oluştu');
+  };
+
+  return (
+    <Drawer isOpen={open} onClose={onClose} title={`Yoklama Düzenle — ${attendance.workerName}`} size="md">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tarih</label>
+            <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Çalışma Türü</label>
+            <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              {Object.entries(ATTENDANCE_TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Yevmiye (₺)</label>
+            <input type="number" min="0" step="0.01" value={form.dailyRate} onChange={(e) => setForm({ ...form, dailyRate: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Ekstra Ücret (₺)</label>
+            <input type="number" min="0" step="0.01" value={form.extraAmount} onChange={(e) => setForm({ ...form, extraAmount: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Proje</label>
+          <select value={form.jobId} onChange={(e) => setForm({ ...form, jobId: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Proje seçilmedi</option>
+            {jobs.map((j: any) => <option key={j.id} value={j.id}>{j.label}</option>)}
+          </select>
+        </div>
+
+        <TextArea label="Ekstra Açıklama" value={form.extraDescription} onChange={(e: any) => setForm({ ...form, extraDescription: e.target.value })} placeholder="Ör: Gece 22.00'ye kadar çalıştı" />
+        <TextArea label="Not" value={form.note} onChange={(e: any) => setForm({ ...form, note: e.target.value })} />
+
+        <div className="flex space-x-3 pt-4 border-t">
+          <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>Vazgeç</Button>
+          <Button type="submit" className="flex-1" disabled={isLoading}>{isLoading ? 'Kaydediliyor...' : 'Güncelle'}</Button>
+        </div>
+      </form>
+    </Drawer>
   );
 }
 

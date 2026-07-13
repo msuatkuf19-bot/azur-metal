@@ -13,6 +13,7 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { getActiveSuppliers } from '@/app/actions/suppliers';
 import { getActiveMaterials } from '@/app/actions/materials';
 import { createMaterialPurchase, updateMaterialPurchase, deleteMaterialPurchase } from '@/app/actions/material-purchases';
+import { confirmDouble } from '@/components/ui/DeleteConfirmDialog';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
@@ -210,7 +211,7 @@ export default function MaterialPurchasesTab({ job, materialPurchases: initialPu
   };
 
   const handleDelete = async (purchase: MaterialPurchase) => {
-    if (!confirm('Bu malzeme alımını silmek istediğinize emin misiniz?')) {
+    if (!confirmDouble('Bu malzeme alımını silmek istediğinize emin misiniz?')) {
       return;
     }
 

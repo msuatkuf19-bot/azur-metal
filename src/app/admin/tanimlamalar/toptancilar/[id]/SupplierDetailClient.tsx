@@ -13,6 +13,7 @@ import { PAYMENT_METHOD_LABELS, PURCHASE_PAYMENT_STATUS_LABELS, PURCHASE_PAYMENT
 import { createSupplierPayment, updateSupplierPayment, deleteSupplierPayment } from '@/app/actions/supplier-payments';
 import { togglePurchasePaymentStatus, deleteMaterialPurchase, deleteSupplierMaterialGroup } from '@/app/actions/material-purchases';
 import { updateSupplier } from '@/app/actions/suppliers';
+import { confirmDouble } from '@/components/ui/DeleteConfirmDialog';
 import { exportToPdf, PdfSection } from '@/lib/pdf-export';
 import toast from 'react-hot-toast';
 
@@ -309,14 +310,14 @@ export default function SupplierDetailClient({ data }: { data: any }) {
   };
 
   const handleDeletePurchase = async (id: string) => {
-    if (!confirm('Bu alım kaydı silinsin mi? Bu işlem geri alınamaz.')) return;
+    if (!confirmDouble('Bu alım kaydı silinsin mi?')) return;
     const r = await deleteMaterialPurchase(id);
     if (r.success) { toast.success('Alım kaydı silindi'); router.refresh(); }
     else toast.error(r.error || 'Hata oluştu');
   };
 
   const handleDeleteMaterialGroup = async (name: string, purchaseCount: number) => {
-    if (!confirm(`"${name}" malzemesine ait ${purchaseCount} alım kaydı tamamen silinsin mi? Bu işlem geri alınamaz.`)) return;
+    if (!confirmDouble(`"${name}" malzemesine ait ${purchaseCount} alım kaydı tamamen silinsin mi?`)) return;
     const r = await deleteSupplierMaterialGroup(supplier.id, name);
     if (r.success) { toast.success('Malzeme kayıtları silindi'); router.refresh(); }
     else toast.error(r.error || 'Hata oluştu');
@@ -836,7 +837,7 @@ export default function SupplierDetailClient({ data }: { data: any }) {
                         <td className="px-4 py-2.5 text-right whitespace-nowrap">
                           <Button variant="ghost" size="sm" onClick={() => setPaymentDrawer({ open: true, editing: p })}>Düzenle</Button>
                           <Button variant="ghost" size="sm" onClick={async () => {
-                            if (!confirm('Bu ödeme kaydı silinsin mi? Bakiye yeniden hesaplanacak.')) return;
+                            if (!confirmDouble('Bu ödeme kaydı silinsin mi? Bakiye yeniden hesaplanacak.')) return;
                             const r = await deleteSupplierPayment(p.id);
                             if (r.success) { toast.success(r.message || 'Silindi'); router.refresh(); }
                             else toast.error(r.error || 'Hata');

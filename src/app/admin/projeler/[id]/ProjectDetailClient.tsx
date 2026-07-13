@@ -17,6 +17,7 @@ import {
 } from '@/lib/constants';
 import { formatCurrency, formatDate, formatDateTime, parseEtiketler } from '@/lib/utils';
 import { updateJobStatus, deleteBusinessJob } from '@/app/actions/business-jobs';
+import { confirmDouble } from '@/components/ui/DeleteConfirmDialog';
 import toast from 'react-hot-toast';
 import { exportToPdf, PdfSection } from '@/lib/pdf-export';
 
@@ -69,7 +70,7 @@ export default function ProjectDetailClient({ data, formData }: ProjectDetailCli
   };
 
   const handleDelete = async () => {
-    if (confirm(`"${project.projeAdi}" projesi silinsin mi? Bu işlem geri alınamaz!`)) {
+    if (confirmDouble(`"${project.projeAdi}" projesi silinsin mi?`)) {
       const result = await deleteBusinessJob(project.id);
       if (result.success) {
         toast.success('Proje silindi');

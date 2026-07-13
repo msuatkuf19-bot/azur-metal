@@ -21,11 +21,13 @@ import {
   type AttendanceType,
 } from '@/lib/constants';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { DeleteConfirmDialog } from '@/components/ui/DeleteConfirmDialog';
 import {
   createWorker,
   updateWorker,
   deleteWorker,
-  activateWorker
+  activateWorker,
+  hardDeleteWorker
 } from '@/app/actions/workers';
 import { createBulkAttendance } from '@/app/actions/attendance';
 import { useRouter } from 'next/navigation';
@@ -64,10 +66,12 @@ interface WorkersClientProps {
 
 export default function WorkersClient({ initialData, stats, activeJobs = [] }: WorkersClientProps) {
   const router = useRouter();
-  const [workers, setWorkers] = useState<Worker[]>(initialData);
+  // router.refresh() sonrası güncel veri görünmesi için doğrudan prop kullanılır
+  const workers = initialData;
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isBulkDrawerOpen, setIsBulkDrawerOpen] = useState(false);
   const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Worker | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
   // Filters
@@ -182,6 +186,19 @@ export default function WorkersClient({ initialData, stats, activeJobs = [] }: W
     }
   };
 
+  const handleHardDelete = async () => {
+    if (!deleteTarget) return;
+
+    const result = await hardDeleteWorker(deleteTarget.id);
+    if (result.success) {
+      toast.success('Çalışan kalıcı olarak silindi');
+      setDeleteTarget(null);
+      router.refresh();
+    } else {
+      toast.error(result.error || 'Bir hata oluştu');
+    }
+  };
+
   const handleActivate = async (worker: Worker) => {
     const result = await activateWorker(worker.id);
     if (result.success) {
@@ -268,6 +285,9 @@ export default function WorkersClient({ initialData, stats, activeJobs = [] }: W
               Aktifleştir
             </Button>
           )}
+          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => setDeleteTarget(w)}>
+            Sil
+          </Button>
         </div>
       ),
     },
@@ -511,6 +531,16 @@ export default function WorkersClient({ initialData, stats, activeJobs = [] }: W
           </div>
         </form>
       </Drawer>
+
+      {/* Kalıcı Silme Onayı */}
+      <DeleteConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleHardDelete}
+        title="Çalışan Silinecek"
+        description={deleteTarget ? `"${deleteTarget.fullName}" kalıcı olarak silinecek. Bu çalışana ait tüm yoklama, ödeme ve işçilik kayıtları da birlikte silinir.` : ''}
+        finalWarning={deleteTarget ? `"${deleteTarget.fullName}" ve tüm yoklama/ödeme geçmişi kalıcı olarak silinecek, geri getirilemeyecek.` : ''}
+      />
 
       {/* Toplu Yoklama Drawer */}
       <BulkAttendanceDrawer

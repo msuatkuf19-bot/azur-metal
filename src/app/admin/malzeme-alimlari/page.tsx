@@ -34,6 +34,7 @@ async function getPageData() {
       vatRate: p.vatRate,
       totalAmount: p.totalAmount,
       invoiceNo: p.invoiceNo,
+      note: p.note,
       paymentStatus: p.paymentStatus,
       purchaseDate: p.purchaseDate.toISOString(),
     })),

@@ -26,6 +26,7 @@ import {
 } from '@/lib/constants';
 import { formatCurrency, formatDate, formatPhone, parseMoney } from '@/lib/utils';
 import { createAttendance, updateAttendance, deleteAttendance } from '@/app/actions/attendance';
+import { confirmDouble } from '@/components/ui/DeleteConfirmDialog';
 import { createWorkerPayment, updateWorkerPayment, deleteWorkerPayment } from '@/app/actions/worker-payments';
 import { closeWorkerPeriod, reopenSettlementPeriod } from '@/app/actions/settlement-periods';
 import { updateWorker } from '@/app/actions/workers';
@@ -752,7 +753,7 @@ export default function WorkerAttendanceClient({ data }: { data: any }) {
                         <td className="px-4 py-2.5 text-right whitespace-nowrap">
                           <Button variant="ghost" size="sm" onClick={() => setPaymentDrawer({ open: true, editing: p })}>Düzenle</Button>
                           <Button variant="ghost" size="sm" onClick={async () => {
-                            if (!confirm('Bu ödeme kaydı silinsin mi? Bakiye yeniden hesaplanacak.')) return;
+                            if (!confirmDouble('Bu ödeme kaydı silinsin mi? Bakiye yeniden hesaplanacak.')) return;
                             const r = await deleteWorkerPayment(p.id);
                             if (r.success) { toast.success(r.message || 'Silindi'); router.refresh(); }
                             else toast.error(r.error || 'Hata');
@@ -1051,7 +1052,7 @@ function AttendanceDrawer({ state, onClose, worker, activeJobs, onSaved }: any) 
         <div className="flex space-x-3 pt-4 border-t">
           {editing && (
             <Button type="button" variant="danger" onClick={async () => {
-              if (!confirm('Bu yoklama kaydı silinsin mi?')) return;
+              if (!confirmDouble('Bu yoklama kaydı silinsin mi?')) return;
               const r = await deleteAttendance(editing.id);
               if (r.success) { toast.success('Yoklama silindi'); onSaved(); }
               else toast.error(r.error || 'Hata');

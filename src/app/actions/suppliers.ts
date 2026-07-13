@@ -305,6 +305,57 @@ export async function deleteSupplier(id: string) {
   }
 }
 
+// Toptancı kalıcı sil (alım ve ödeme kayıtları da silinir)
+export async function hardDeleteSupplier(id: string) {
+  try {
+    const supplier = await prisma.supplier.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { materialPurchases: true, supplierPayments: true } },
+      },
+    });
+    if (!supplier) {
+      return { success: false, error: 'Toptancı bulunamadı' };
+    }
+
+    // Silinen alımların bağlı olduğu işlerin maliyet toplamları yeniden hesaplanmalı
+    const affectedJobs = await prisma.materialPurchase.findMany({
+      where: { supplierId: id },
+      select: { jobId: true },
+      distinct: ['jobId'],
+    });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.supplier.delete({ where: { id } });
+
+      for (const { jobId } of affectedJobs) {
+        const materialResult = await tx.materialPurchase.aggregate({
+          where: { jobId },
+          _sum: { totalAmount: true },
+        });
+        await tx.businessJob.update({
+          where: { id: jobId },
+          data: { materialCostTotal: materialResult._sum.totalAmount || 0 },
+        });
+      }
+    });
+
+    await createAuditLog(
+      'HARD_DELETE',
+      'Supplier',
+      id,
+      `Toptancı kalıcı silindi: ${supplier.name} (${supplier._count.materialPurchases} alım, ${supplier._count.supplierPayments} ödeme kaydıyla birlikte)`
+    );
+
+    revalidatePath('/admin/tanimlamalar/toptancilar');
+    revalidatePath('/admin/malzeme-alimlari');
+    revalidatePath('/admin/tedarikci-odemeleri');
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 // Toptancı aktifleştir
 export async function activateSupplier(id: string) {
   try {

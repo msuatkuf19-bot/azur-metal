@@ -12,11 +12,13 @@ import { SupplierBalanceCard } from '@/components/ui/SupplierBalanceCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ACTIVE_STATUS_COLORS } from '@/lib/constants';
 import { formatCurrency } from '@/lib/utils';
+import { DeleteConfirmDialog } from '@/components/ui/DeleteConfirmDialog';
 import {
   createSupplier,
   updateSupplier,
   deleteSupplier,
-  activateSupplier
+  activateSupplier,
+  hardDeleteSupplier
 } from '@/app/actions/suppliers';
 import toast from 'react-hot-toast';
 import { exportToPdf, PdfSection } from '@/lib/pdf-export';
@@ -45,9 +47,11 @@ interface SuppliersClientProps {
 
 export default function SuppliersClient({ initialData }: SuppliersClientProps) {
   const router = useRouter();
-  const [suppliers, setSuppliers] = useState<Supplier[]>(initialData);
+  // router.refresh() sonrası güncel veri görünmesi için doğrudan prop kullanılır
+  const suppliers = initialData;
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Supplier | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
   // Filters
@@ -160,6 +164,19 @@ export default function SuppliersClient({ initialData }: SuppliersClientProps) {
     }
   };
 
+  const handleHardDelete = async () => {
+    if (!deleteTarget) return;
+
+    const result = await hardDeleteSupplier(deleteTarget.id);
+    if (result.success) {
+      toast.success('Toptancı kalıcı olarak silindi');
+      setDeleteTarget(null);
+      router.refresh();
+    } else {
+      toast.error(result.error || 'Bir hata oluştu');
+    }
+  };
+
   const handleActivate = async (supplier: Supplier) => {
     const result = await activateSupplier(supplier.id);
     if (result.success) {
@@ -230,6 +247,9 @@ export default function SuppliersClient({ initialData }: SuppliersClientProps) {
               Aktifleştir
             </Button>
           )}
+          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => setDeleteTarget(s)}>
+            Sil
+          </Button>
         </div>
       ),
     },
@@ -430,6 +450,16 @@ export default function SuppliersClient({ initialData }: SuppliersClientProps) {
           </div>
         </form>
       </Drawer>
+
+      {/* Kalıcı Silme Onayı */}
+      <DeleteConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleHardDelete}
+        title="Toptancı Silinecek"
+        description={deleteTarget ? `"${deleteTarget.name}" kalıcı olarak silinecek. Bu toptancıya ait ${deleteTarget._count.materialPurchases} alım kaydı ve tüm ödeme kayıtları da birlikte silinir.` : ''}
+        finalWarning={deleteTarget ? `"${deleteTarget.name}" ve tüm alım/ödeme geçmişi kalıcı olarak silinecek, geri getirilemeyecek.` : ''}
+      />
     </div>
   );
 }

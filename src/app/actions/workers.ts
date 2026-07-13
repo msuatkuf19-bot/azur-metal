@@ -169,19 +169,51 @@ export async function deleteWorker(id: string) {
   }
 }
 
-// Çalışan kalıcı sil
+// Çalışan kalıcı sil (yoklama, ödeme ve işçilik kayıtları da silinir)
 export async function hardDeleteWorker(id: string) {
   try {
-    const worker = await prisma.worker.findUnique({ where: { id } });
+    const worker = await prisma.worker.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { workEntries: true, attendances: true, workerPayments: true } },
+      },
+    });
     if (!worker) {
       return { success: false, error: 'Çalışan bulunamadı' };
     }
 
-    await prisma.worker.delete({ where: { id } });
+    // Silinen işçilik kayıtlarının bağlı olduğu işlerin maliyet toplamları yeniden hesaplanmalı
+    const affectedJobs = await prisma.workEntry.findMany({
+      where: { workerId: id },
+      select: { jobId: true },
+      distinct: ['jobId'],
+    });
 
-    await createAuditLog('HARD_DELETE', 'Worker', id, `Çalışan silindi: ${worker.fullName}`);
+    await prisma.$transaction(async (tx) => {
+      await tx.worker.delete({ where: { id } });
+
+      for (const { jobId } of affectedJobs) {
+        const laborResult = await tx.workEntry.aggregate({
+          where: { jobId },
+          _sum: { totalAmount: true },
+        });
+        await tx.businessJob.update({
+          where: { id: jobId },
+          data: { laborCostTotal: laborResult._sum.totalAmount || 0 },
+        });
+      }
+    });
+
+    await createAuditLog(
+      'HARD_DELETE',
+      'Worker',
+      id,
+      `Çalışan kalıcı silindi: ${worker.fullName} (${worker._count.attendances} yoklama, ${worker._count.workerPayments} ödeme, ${worker._count.workEntries} işçilik kaydıyla birlikte)`
+    );
 
     revalidatePath('/admin/tanimlamalar/ustalar');
+    revalidatePath('/admin/yoklama');
+    revalidatePath('/admin/personel-odemeleri');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

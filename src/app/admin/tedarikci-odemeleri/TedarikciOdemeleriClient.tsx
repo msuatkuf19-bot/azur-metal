@@ -10,6 +10,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Drawer } from '@/components/ui/Drawer';
+import { DeleteConfirmDialog } from '@/components/ui/DeleteConfirmDialog';
 import { formatCurrency, formatDate, parseMoney } from '@/lib/utils';
 import { PAYMENT_METHOD_LABELS } from '@/lib/constants';
 import { createSupplierPayment, updateSupplierPayment, deleteSupplierPayment } from '@/app/actions/supplier-payments';
@@ -43,10 +44,12 @@ export default function TedarikciOdemeleriClient({ data }: { data: any }) {
   const totalPaid = filtered.reduce((s: number, p: any) => s + p.amount, 0);
   const totalOpenBalance = suppliers.reduce((s: number, sup: any) => s + Math.max(0, sup.openBalance), 0);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bu ödeme kaydı silinsin mi? Bakiye yeniden hesaplanacak.')) return;
-    const r = await deleteSupplierPayment(id);
-    if (r.success) { toast.success(r.message || 'Silindi'); router.refresh(); }
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const r = await deleteSupplierPayment(deleteTarget.id);
+    if (r.success) { toast.success(r.message || 'Silindi'); setDeleteTarget(null); router.refresh(); }
     else toast.error(r.error || 'Hata');
   };
 
@@ -120,7 +123,7 @@ export default function TedarikciOdemeleriClient({ data }: { data: any }) {
                       <td className="px-4 py-2.5 text-right font-semibold text-orange-600">{formatCurrency(p.amount)}</td>
                       <td className="px-4 py-2.5 text-right whitespace-nowrap">
                         <Button variant="ghost" size="sm" onClick={() => setDrawer({ open: true, editing: p })}>Düzenle</Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)}>Sil</Button>
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => setDeleteTarget(p)}>Sil</Button>
                       </td>
                     </tr>
                   ))}
@@ -132,6 +135,14 @@ export default function TedarikciOdemeleriClient({ data }: { data: any }) {
       </Card>
 
       <SupplierPaymentDrawer state={drawer} onClose={() => setDrawer({ open: false, editing: null })} suppliers={suppliers} jobs={jobs} onSaved={() => { setDrawer({ open: false, editing: null }); router.refresh(); }} />
+
+      <DeleteConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Ödeme Kaydı Silinecek"
+        description={deleteTarget ? `${deleteTarget.supplierName} — ${formatDate(deleteTarget.paymentDate)} tarihli ${formatCurrency(deleteTarget.amount)} tutarındaki ödeme silinecek. Toptancı bakiyesi yeniden hesaplanır.` : ''}
+      />
     </div>
   );
 }

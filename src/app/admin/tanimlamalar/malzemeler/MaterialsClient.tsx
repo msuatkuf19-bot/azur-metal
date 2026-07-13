@@ -8,11 +8,13 @@ import { DataTable } from '@/components/ui/DataTable';
 import { FilterBar, SelectFilter } from '@/components/ui/FilterBar';
 import { Input } from '@/components/ui/Input';
 import { UNIT_LABELS, UNIT_OPTIONS, VAT_RATE_OPTIONS, ACTIVE_STATUS_COLORS } from '@/lib/constants';
-import { 
-  createMaterial, 
-  updateMaterial, 
-  deleteMaterial, 
-  activateMaterial 
+import { DeleteConfirmDialog } from '@/components/ui/DeleteConfirmDialog';
+import {
+  createMaterial,
+  updateMaterial,
+  deleteMaterial,
+  activateMaterial,
+  hardDeleteMaterial
 } from '@/app/actions/materials';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -34,9 +36,11 @@ interface MaterialsClientProps {
 
 export default function MaterialsClient({ initialData }: MaterialsClientProps) {
   const router = useRouter();
-  const [materials, setMaterials] = useState<Material[]>(initialData);
+  // router.refresh() sonrası güncel veri görünmesi için doğrudan prop kullanılır
+  const materials = initialData;
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Material | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
   // Filters
@@ -131,6 +135,19 @@ export default function MaterialsClient({ initialData }: MaterialsClientProps) {
     }
   };
 
+  const handleHardDelete = async () => {
+    if (!deleteTarget) return;
+
+    const result = await hardDeleteMaterial(deleteTarget.id);
+    if (result.success) {
+      toast.success('Malzeme kalıcı olarak silindi');
+      setDeleteTarget(null);
+      router.refresh();
+    } else {
+      toast.error(result.error || 'Bir hata oluştu');
+    }
+  };
+
   const handleActivate = async (material: Material) => {
     const result = await activateMaterial(material.id);
     if (result.success) {
@@ -188,6 +205,9 @@ export default function MaterialsClient({ initialData }: MaterialsClientProps) {
               Aktifleştir
             </Button>
           )}
+          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => setDeleteTarget(m)}>
+            Sil
+          </Button>
         </div>
       ),
     },
@@ -341,6 +361,16 @@ export default function MaterialsClient({ initialData }: MaterialsClientProps) {
           </div>
         </form>
       </Drawer>
+
+      {/* Kalıcı Silme Onayı */}
+      <DeleteConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleHardDelete}
+        title="Malzeme Silinecek"
+        description={deleteTarget ? `"${deleteTarget.name}" malzemesi kalıcı olarak silinecek. ${deleteTarget._count.purchases > 0 ? `${deleteTarget._count.purchases} alım kaydındaki malzeme bağlantısı kaldırılır (alım kayıtları silinmez).` : 'Bu malzemeye bağlı alım kaydı yok.'}` : ''}
+        finalWarning={deleteTarget ? `"${deleteTarget.name}" kalıcı olarak silinecek ve geri getirilemeyecek.` : ''}
+      />
     </div>
   );
 }

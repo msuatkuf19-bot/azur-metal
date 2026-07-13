@@ -13,6 +13,7 @@ import { WORKER_ROLE_LABELS, WORKER_ROLE_COLORS } from '@/lib/constants';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { getActiveWorkers } from '@/app/actions/workers';
 import { createWorkEntry, updateWorkEntry, deleteWorkEntry } from '@/app/actions/work-entries';
+import { confirmDouble } from '@/components/ui/DeleteConfirmDialog';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
@@ -171,7 +172,7 @@ export default function WorkEntriesTab({ job, workEntries: initialEntries }: Wor
   };
 
   const handleDelete = async (entry: WorkEntry) => {
-    if (!confirm('Bu işçilik kaydını silmek istediğinize emin misiniz?')) {
+    if (!confirmDouble('Bu işçilik kaydını silmek istediğinize emin misiniz?')) {
       return;
     }
 

@@ -11,6 +11,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Drawer } from '@/components/ui/Drawer';
+import { DeleteConfirmDialog } from '@/components/ui/DeleteConfirmDialog';
 import { formatCurrency, formatDate, parseMoney } from '@/lib/utils';
 import { PAYMENT_METHOD_LABELS, WORKER_PAYMENT_TYPE_LABELS, WORKER_PAYMENT_TYPE_COLORS } from '@/lib/constants';
 import { createWorkerPayment, updateWorkerPayment, deleteWorkerPayment } from '@/app/actions/worker-payments';
@@ -44,10 +45,12 @@ export default function PersonelOdemeleriClient({ data }: { data: any }) {
   const totalPaid = filtered.reduce((s: number, p: any) => s + p.amount, 0);
   const advanceTotal = filtered.filter((p: any) => p.paymentType === 'AVANS').reduce((s: number, p: any) => s + p.amount, 0);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bu ödeme kaydı silinsin mi? Bakiye yeniden hesaplanacak.')) return;
-    const r = await deleteWorkerPayment(id);
-    if (r.success) { toast.success((r as any).message || 'Silindi'); router.refresh(); }
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const r = await deleteWorkerPayment(deleteTarget.id);
+    if (r.success) { toast.success((r as any).message || 'Silindi'); setDeleteTarget(null); router.refresh(); }
     else toast.error(r.error || 'Hata');
   };
 
@@ -127,7 +130,7 @@ export default function PersonelOdemeleriClient({ data }: { data: any }) {
                       <td className="px-4 py-2.5 text-right font-semibold text-orange-600">{formatCurrency(p.amount)}</td>
                       <td className="px-4 py-2.5 text-right whitespace-nowrap">
                         <Button variant="ghost" size="sm" onClick={() => setDrawer({ open: true, editing: p })}>Düzenle</Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)}>Sil</Button>
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => setDeleteTarget(p)}>Sil</Button>
                       </td>
                     </tr>
                   ))}
@@ -139,6 +142,14 @@ export default function PersonelOdemeleriClient({ data }: { data: any }) {
       </Card>
 
       <WorkerPaymentDrawer state={drawer} onClose={() => setDrawer({ open: false, editing: null })} workers={workers} jobs={jobs} onSaved={() => { setDrawer({ open: false, editing: null }); router.refresh(); }} />
+
+      <DeleteConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Ödeme Kaydı Silinecek"
+        description={deleteTarget ? `${deleteTarget.workerName} — ${formatDate(deleteTarget.date)} tarihli ${formatCurrency(deleteTarget.amount)} tutarındaki ödeme silinecek. Personel bakiyesi yeniden hesaplanır.` : ''}
+      />
     </div>
   );
 }

@@ -17,6 +17,7 @@ import {
 import { formatCurrency, formatDate, formatDateTime, formatPhone, parseEtiketler } from '@/lib/utils';
 import { exportToPdf, PdfSection } from '@/lib/pdf-export';
 import { updateJobStatus, deleteBusinessJob } from '@/app/actions/business-jobs';
+import { confirmDouble } from '@/components/ui/DeleteConfirmDialog';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
@@ -55,7 +56,7 @@ export default function JobDetailClient({ data }: any) {
   };
 
   const handleDelete = async () => {
-    if (confirm(`"${job.firmaAdi || job.musteriAdi}" iş emri silinsin mi? Bu işlem geri alınamaz!`)) {
+    if (confirmDouble(`"${job.firmaAdi || job.musteriAdi}" iş emri silinsin mi?`)) {
       const result = await deleteBusinessJob(job.id);
       if (result.success) {
         toast.success('İş emri silindi');

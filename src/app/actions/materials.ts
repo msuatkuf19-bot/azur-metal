@@ -160,6 +160,41 @@ export async function deleteMaterial(id: string) {
   }
 }
 
+// Malzeme kalıcı sil (alım kayıtları korunur, malzeme adı serbest metin olarak kalır)
+export async function hardDeleteMaterial(id: string) {
+  try {
+    const material = await prisma.material.findUnique({
+      where: { id },
+      include: { _count: { select: { purchases: true } } },
+    });
+    if (!material) {
+      return { success: false, error: 'Malzeme bulunamadı' };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // Bağlantı koptuğunda alım kayıtlarında malzeme adı görünmeye devam etsin
+      await tx.materialPurchase.updateMany({
+        where: { materialId: id, OR: [{ materialName: null }, { materialName: '' }] },
+        data: { materialName: material.name },
+      });
+      await tx.material.delete({ where: { id } });
+    });
+
+    await createAuditLog(
+      'HARD_DELETE',
+      'Material',
+      id,
+      `Malzeme kalıcı silindi: ${material.name} (${material._count.purchases} alım kaydındaki bağlantı kaldırıldı)`
+    );
+
+    revalidatePath('/admin/tanimlamalar/malzemeler');
+    revalidatePath('/admin/malzeme-alimlari');
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 // Malzeme aktifleştir
 export async function activateMaterial(id: string) {
   try {
