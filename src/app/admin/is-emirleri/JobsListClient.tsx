@@ -130,7 +130,7 @@ export default function JobsListClient({ jobs, searchParams }: any) {
       {/* Filters */}
       <Card>
         <CardBody>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="md:col-span-2">
               <div className="flex space-x-2">
                 <Input
@@ -164,6 +164,14 @@ export default function JobsListClient({ jobs, searchParams }: any) {
               value={searchParams.oncelik || ''}
               onChange={(e) => handleFilterChange('oncelik', e.target.value)}
             />
+            <Select
+              options={[
+                { value: '', label: 'Aktif Kayıtlar' },
+                { value: '1', label: 'Arşivdekiler' },
+              ]}
+              value={searchParams.arsiv || ''}
+              onChange={(e) => handleFilterChange('arsiv', e.target.value)}
+            />
           </div>
 
           {/* View Toggle */}
@@ -187,7 +195,7 @@ export default function JobsListClient({ jobs, searchParams }: any) {
               </button>
             </div>
 
-            {(searchParams.search || searchParams.durum || searchParams.oncelik) && (
+            {(searchParams.search || searchParams.durum || searchParams.oncelik || searchParams.arsiv) && (
               <Button
                 variant="ghost"
                 size="sm"

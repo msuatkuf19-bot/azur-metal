@@ -17,6 +17,8 @@ const ACTION_LABELS: Record<string, { label: string; color: string }> = {
   DELETE: { label: 'Silme', color: 'bg-rose-100 text-rose-800' },
   HARD_DELETE: { label: 'Kalıcı Silme', color: 'bg-rose-200 text-rose-900' },
   UPDATE_STATUS: { label: 'Durum Değişikliği', color: 'bg-purple-100 text-purple-800' },
+  ARCHIVE: { label: 'Arşivleme', color: 'bg-slate-100 text-slate-800' },
+  UNARCHIVE: { label: 'Arşivden Çıkarma', color: 'bg-slate-100 text-slate-800' },
   ACTIVATE: { label: 'Aktifleştirme', color: 'bg-emerald-100 text-emerald-800' },
   CLOSE_PERIOD: { label: 'Dönem Kapatma', color: 'bg-amber-100 text-amber-800' },
   REOPEN_PERIOD: { label: 'Dönem Yeniden Açma', color: 'bg-amber-100 text-amber-800' },

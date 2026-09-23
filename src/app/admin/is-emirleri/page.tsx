@@ -2,16 +2,18 @@ import { prisma } from '@/lib/prisma';
 import JobsListClient from './JobsListClient';
 
 async function getJobs(searchParams: any) {
-  const { search, durum, oncelik, view = 'card' } = searchParams;
+  const { search, durum, oncelik, arsiv } = searchParams;
 
-  const where: any = {};
+  // Arşivlenenler varsayılan olarak gizli; "arsiv=1" ile sadece arşiv listelenir
+  const where: any = { arsivlendi: arsiv === '1' };
 
   if (search) {
     where.OR = [
-      { isletmeAdi: { contains: search, mode: 'insensitive' } },
-      { yetkiliAdSoyad: { contains: search, mode: 'insensitive' } },
+      { firmaAdi: { contains: search } },
+      { musteriAdi: { contains: search } },
+      { musteriSoyadi: { contains: search } },
       { telefon: { contains: search } },
-      { referansKodu: { contains: search, mode: 'insensitive' } },
+      { referansKodu: { contains: search } },
     ];
   }
 
@@ -60,10 +62,11 @@ async function getJobs(searchParams: any) {
 }
 
 export default async function JobsListPage({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
-  searchParams: any;
+  searchParams: Promise<any>;
 }) {
+  const searchParams = await searchParamsPromise;
   const jobs = await getJobs(searchParams);
 
   return <JobsListClient jobs={jobs} searchParams={searchParams} />;

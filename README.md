@@ -17,13 +17,17 @@ Varsayılan giriş: `admin` / `Admin123!`
 - Müşteri/firma bilgileri, **serbest metin iş tipi** (Korkuluk, Merdiven, Kaynak vb. elle yazılır), durum ve öncelik yönetimi
 - Durumlar: Yeni → Teklif Hazırlanıyor → Teklif Gönderildi → Onaylandı → Sözleşme → Uygulama → Tamamlandı / İptal
 - Detay sekmeleri: Genel, Teklifler, Sözleşmeler, Ödemeler, İşçilik, Malzeme Alımları, Siparişler, Ekstre (Ledger), Audit
-- Kalemli teklif oluşturma (KDV hesaplı), sözleşme imza takibi
+- Teklif, sözleşme, sipariş ve ödeme planı kayıtları görüntülenir (bu kayıtları oluşturan ekran henüz yok)
+- Tahsilat ve giderler **eklenebilir, düzenlenebilir, silinebilir** (Ödemeler sekmesi)
+- **Kopyala / Arşivle / Sil** (aşağıdaki "Veri Güvenliği" bölümüne bakın), arama ve arşiv filtresi
 - Liste ve detay için **PDF rapor** çıktısı
 
 ### 🏗️ Projeler (`/admin/projeler`)
 - İş emirlerinin proje odaklı görünümü: ilerleme çubuğu, kârlılık rozeti, çalışan avatarları
-- Detay sekmeleri: Genel, Çalışanlar, Malzemeler, Giderler, Tahsilatlar, Kâr Analizi, Dosyalar, Aktivite
+- Detay sekmeleri: Genel, Ustalar & İşçilik, Malzemeler, Giderler, Tahsilat & Ödemeler, Kâr Analizi, Dosyalar, Aktivite
 - Sağ panelden hızlı kayıt: İşçilik, Malzeme Alımı, Gider, Tahsilat
+- İşçilik, malzeme alımı, gider ve tahsilat kayıtları sekmelerden **düzenlenir / silinir**
+- Proje bilgileri `/admin/projeler/[id]/duzenle` sayfasından düzenlenir; kart menüsünden **Kopyala / Arşivle / Sil**
 - **Gider kaydı serbest metin**: yakıt, yemek, nakliye vb. açıklamaya yazılır (hazır kategori listesi yok)
 - Otomatik maliyet toplama: işçilik + malzeme + diğer giderler → net kâr
 - Proje listesi ve proje detayı için **PDF rapor** (işçilik/malzeme/gider/tahsilat dökümleriyle)
@@ -45,6 +49,14 @@ Varsayılan giriş: `admin` / `Admin123!`
 - Malzeme kataloğu: birim (adet, kg, mt, m², litre...) ve varsayılan KDV oranı
 - Katalogdan seçerek veya serbest adla malzeme alımı kaydı
 - Liste için **PDF rapor**
+
+### 🛡️ Veri Güvenliği
+- **Arşivle (önerilen)**: iş emri/proje listelerden gizlenir, hiçbir kayıt silinmez. Listelerdeki "Arşivdekiler" filtresiyle görülür, detaydan "Arşivden Çıkar" ile geri alınır. Dashboard'daki mali toplamlara dahil olmaya devam eder.
+- **Kalıcı silme**: silme penceresi birlikte silinecek kayıtları (işçilik, malzeme, ödeme...) sayılarıyla gösterir. İşe bağlı mali kayıt varsa önce arşivleme önerilir; kalıcı silmek için referans kodunun (ör. `JOB-2026-0002`) elle yazılması gerekir. Yoklama, personel ve toptancı ödemeleri silinmez, sadece iş bağlantısı kaldırılır.
+- **Kopyala**: müşteri ve iş bilgileri yeni kayda aktarılır; ödeme, işçilik ve malzeme hareketleri kopyalanmaz.
+- Diğer tüm silmeler iki aşamalı onay ister ve audit log'a yazılır.
+- **Yedek Al** (sol menü → Tanımlamalar): tüm veritabanını JSON olarak indirir (kullanıcı şifreleri hariç).
+- Komut satırından Turso yedeği: `npx tsx --env-file=.env scripts/turso-backup.ts` → `backups/` klasörüne yazar (git'e eklenmez).
 
 ### 🖨️ Raporlama
 Her ana sayfada sağ üstte **"Rapor Al"** butonu bulunur. Şirket başlıklı, tarihli, tablolu A4 rapor tarayıcının yazdırma penceresinde açılır — yazıcıya gönderilebilir veya PDF olarak kaydedilebilir.
@@ -95,14 +107,17 @@ npm run dev
 | `npm run db:migrate` | Lokal veritabanı migration |
 | `npm run db:seed` | Demo veri yükleme |
 | `npm run db:studio` | Prisma Studio (DB arayüzü) |
-| `npx tsx --env-file=.env scripts/turso-migrate.ts` | Turso şema senkronizasyonu |
+| `npx tsx --env-file=.env scripts/turso-migrate.ts` | Turso şema senkronizasyonu (tekrar çalıştırmak güvenlidir) |
+| `npx tsx --env-file=.env scripts/turso-backup.ts` | Turso veritabanının JSON yedeği (salt okunur) |
+
+> **Şema değişikliği sırası:** önce `turso-backup.ts` ile yedek alın, sonra `turso-migrate.ts` çalıştırın, en son yeni kodu yayına alın.
 
 ## Veritabanı Modelleri
 
 | Model | Açıklama |
 |-------|----------|
 | `AdminUser` | Panel kullanıcıları |
-| `BusinessJob` | İş emri / proje (müşteri, iş tipi, durum, maliyet toplamları) |
+| `BusinessJob` | İş emri / proje (müşteri, iş tipi, durum, maliyet toplamları, `arsivlendi` / `arsivTarihi`) |
 | `Offer` / `OfferItem` | Teklifler ve kalemleri (KDV hesaplı) |
 | `Contract` | Sözleşmeler ve imza durumu |
 | `Payment` | Tahsilat ve gider kayıtları (gider türü açıklamada serbest metin) |

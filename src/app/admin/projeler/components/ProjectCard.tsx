@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { JobDeleteDialog, duplicateJob, toggleJobArchive } from '@/components/jobs/JobActions';
 import { Badge } from '@/components/ui/Badge';
 import {
   JOB_STATUS_LABELS,
@@ -18,6 +20,13 @@ interface ProjectCardProps {
 
 export default function ProjectCard({ project, onMenuOpen, isMenuOpen }: ProjectCardProps) {
   const router = useRouter();
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const actionTarget = {
+    id: project.id,
+    referansKodu: project.referansKodu,
+    name: project.projeAdi,
+    arsivlendi: project.arsivlendi,
+  };
 
   const getRelativeTime = (date: Date | string) => {
     const now = new Date();
@@ -51,8 +60,22 @@ export default function ProjectCard({ project, onMenuOpen, isMenuOpen }: Project
   ];
 
   return (
+    <>
+    <JobDeleteDialog
+      job={actionTarget}
+      isOpen={isDeleteOpen}
+      onClose={() => setIsDeleteOpen(false)}
+      onDeleted={() => {
+        setIsDeleteOpen(false);
+        router.refresh();
+      }}
+      onArchived={() => {
+        setIsDeleteOpen(false);
+        router.refresh();
+      }}
+    />
     <div
-      className="group relative bg-white rounded-xl border border-gray-200 shadow-sm 
+      className="group relative bg-white rounded-xl border border-gray-200 shadow-sm
                  hover:shadow-xl hover:border-primary-300 hover:-translate-y-1
                  transition-all duration-300 cursor-pointer overflow-hidden
                  aspect-square flex flex-col"
@@ -103,6 +126,10 @@ export default function ProjectCard({ project, onMenuOpen, isMenuOpen }: Project
               Düzenle
             </Link>
             <button
+              onClick={() => {
+                onMenuOpen(project.id);
+                duplicateJob(actionTarget, '/admin/projeler', router);
+              }}
               className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
               <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -112,12 +139,28 @@ export default function ProjectCard({ project, onMenuOpen, isMenuOpen }: Project
             </button>
             <hr className="my-1" />
             <button
+              onClick={() => {
+                onMenuOpen(project.id);
+                toggleJobArchive(actionTarget, router);
+              }}
               className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
               <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
               </svg>
-              Arşivle
+              {project.arsivlendi ? 'Arşivden Çıkar' : 'Arşivle'}
+            </button>
+            <button
+              onClick={() => {
+                onMenuOpen(project.id);
+                setIsDeleteOpen(true);
+              }}
+              className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Sil
             </button>
           </div>
         )}
@@ -214,5 +257,6 @@ export default function ProjectCard({ project, onMenuOpen, isMenuOpen }: Project
         </div>
       </div>
     </div>
+    </>
   );
 }

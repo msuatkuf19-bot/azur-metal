@@ -2,6 +2,9 @@ import { prisma } from '@/lib/prisma';
 import { attendanceEarning } from '@/lib/worker-account';
 import WorkersClient from './WorkersClient';
 
+// Bakiye ve listeler her istekte veritabanından güncel okunur (build anında dondurulmaz)
+export const dynamic = 'force-dynamic';
+
 async function getWorkersPageData() {
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());

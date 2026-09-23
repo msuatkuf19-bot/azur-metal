@@ -86,6 +86,11 @@ export default function MaterialPurchasesTab({ job, materialPurchases: initialPu
     purchaseDate: new Date().toISOString().split('T')[0],
   });
 
+  // Düzenleme/silme sonrası router.refresh ile gelen güncel listeyi al
+  useEffect(() => {
+    setPurchases(initialPurchases || []);
+  }, [initialPurchases]);
+
   // Load suppliers and materials for dropdowns
   useEffect(() => {
     const loadData = async () => {

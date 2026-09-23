@@ -1,6 +1,9 @@
 import { prisma } from '@/lib/prisma';
 import MastersListClient from './MastersListClient';
 
+// Liste her istekte veritabanından güncel okunur (build anında dondurulmaz)
+export const dynamic = 'force-dynamic';
+
 async function getMasters() {
   const masters = await prisma.master.findMany({
     orderBy: { adSoyad: 'asc' },

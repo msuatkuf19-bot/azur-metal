@@ -186,7 +186,14 @@ async function migrate() {
     console.log('- SupplierPayment tablosu zaten var');
   }
 
-  // 10. Backfill: mevcut yoklama kayıtlarında katsayı ve yevmiye snapshot
+  // 10. BusinessJob arşiv alanları (silmek yerine arşivleme)
+  await addColumns('BusinessJob', [
+    { name: 'arsivlendi', ddl: '"arsivlendi" BOOLEAN NOT NULL DEFAULT false' },
+    { name: 'arsivTarihi', ddl: '"arsivTarihi" DATETIME' },
+  ]);
+  await client.execute('CREATE INDEX IF NOT EXISTS "BusinessJob_arsivlendi_idx" ON "BusinessJob"("arsivlendi")');
+
+  // 11. Backfill: mevcut yoklama kayıtlarında katsayı ve yevmiye snapshot
   const half = await client.execute("UPDATE Attendance SET dayMultiplier = 0.5 WHERE type = 'HALF_DAY' AND dayMultiplier = 1");
   if (half.rowsAffected > 0) console.log(`✓ ${half.rowsAffected} yarım gün kaydına 0.5 katsayı yazıldı`);
   const snap = await client.execute(`

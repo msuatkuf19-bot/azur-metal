@@ -37,10 +37,14 @@ yarn-error.log*
 next-env.d.ts
 
 # prisma
-/prisma/migrations
+# prisma migration dosyaları şema geçmişi için repoda tutulur
 
 # uploads
 /public/uploads
 
 # claude code local tooling
 /.claude/
+*.db-journal
+
+# veritabanı yedekleri (kişisel veri içerir)
+/backups

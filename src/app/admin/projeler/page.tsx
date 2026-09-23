@@ -2,9 +2,10 @@ import { prisma } from '@/lib/prisma';
 import ProjectsListClient from './ProjectsListClient';
 
 async function getProjects(searchParams: any) {
-  const { search, durum, musteri, karlilik } = searchParams;
+  const { search, durum, karlilik, arsiv } = searchParams;
 
-  const where: any = {};
+  // Arşivlenenler varsayılan olarak gizli; "arsiv=1" ile sadece arşiv listelenir
+  const where: any = { arsivlendi: arsiv === '1' };
 
   if (search) {
     where.OR = [
@@ -107,6 +108,7 @@ async function getProjects(searchParams: any) {
       durum: project.durum,
       oncelik: project.oncelik,
       etiketler: project.etiketler,
+      arsivlendi: project.arsivlendi,
       olusturmaTarihi: project.olusturmaTarihi,
       guncellemeTarihi: project.guncellemeTarihi,
       metrics: {
@@ -140,7 +142,8 @@ async function getProjects(searchParams: any) {
   return filteredProjects;
 }
 
-export default async function ProjectsPage({ searchParams }: { searchParams: any }) {
+export default async function ProjectsPage({ searchParams: searchParamsPromise }: { searchParams: Promise<any> }) {
+  const searchParams = await searchParamsPromise;
   const projects = await getProjects(searchParams);
 
   return <ProjectsListClient projects={projects} searchParams={searchParams} />;

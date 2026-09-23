@@ -77,6 +77,11 @@ export default function WorkEntriesTab({ job, workEntries: initialEntries }: Wor
     description: '',
   });
 
+  // Düzenleme/silme sonrası router.refresh ile gelen güncel listeyi al
+  useEffect(() => {
+    setEntries(initialEntries || []);
+  }, [initialEntries]);
+
   // Load workers for dropdown
   useEffect(() => {
     const loadWorkers = async () => {

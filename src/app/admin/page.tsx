@@ -49,7 +49,7 @@ async function getDashboardStats() {
     supplierPaymentSums,
   ] = await Promise.all([
     prisma.businessJob.count(),
-    prisma.businessJob.count({ where: { durum: { notIn: ['Tamamlandi', 'Iptal'] } } }),
+    prisma.businessJob.count({ where: { arsivlendi: false, durum: { notIn: ['Tamamlandi', 'Iptal'] } } }),
     prisma.payment.aggregate({ where: { tip: 'Tahsilat', tarih: { gte: startOfMonth, lte: endOfMonth } }, _sum: { tutar: true } }),
     prisma.payment.aggregate({ where: { tip: 'Gider', tarih: { gte: startOfMonth, lte: endOfMonth } }, _sum: { tutar: true } }),
     prisma.paymentPlan.findMany({ where: { durum: 'Bekliyor', vadeTarihi: { lt: now } }, include: { job: true }, orderBy: { vadeTarihi: 'asc' }, take: 8 }),
@@ -61,7 +61,7 @@ async function getDashboardStats() {
       orderBy: { vadeTarihi: 'asc' },
       take: 5,
     }),
-    prisma.businessJob.findMany({ take: 5, orderBy: { olusturmaTarihi: 'desc' } }),
+    prisma.businessJob.findMany({ where: { arsivlendi: false }, take: 5, orderBy: { olusturmaTarihi: 'desc' } }),
     prisma.worker.findMany({ where: { isActive: true }, select: { id: true, fullName: true, dailyRate: true } }),
     prisma.supplier.findMany({ where: { isActive: true }, select: { id: true, name: true } }),
     prisma.businessJob.findMany({

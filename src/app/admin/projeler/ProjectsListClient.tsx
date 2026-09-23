@@ -59,7 +59,7 @@ export default function ProjectsListClient({ projects, searchParams }: ProjectsL
     router.push('/admin/projeler');
   };
 
-  const hasFilters = searchParams.search || searchParams.durum || searchParams.karlilik;
+  const hasFilters = searchParams.search || searchParams.durum || searchParams.karlilik || searchParams.arsiv;
 
   const handleExportPdf = () => {
     const totalCollection = projects.reduce((s, p) => s + (p.metrics?.totalCollection || 0), 0);
@@ -148,7 +148,7 @@ export default function ProjectsListClient({ projects, searchParams }: ProjectsL
       {/* Filters */}
       <Card className="border border-gray-200">
         <CardBody>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
             {/* Search */}
             <div className="md:col-span-2">
               <div className="flex space-x-2">
@@ -194,6 +194,16 @@ export default function ProjectsListClient({ projects, searchParams }: ProjectsL
               ]}
               value={searchParams.karlilik || ''}
               onChange={(e) => handleFilterChange('karlilik', e.target.value)}
+            />
+
+            {/* Arşiv Filter */}
+            <Select
+              options={[
+                { value: '', label: 'Aktif Projeler' },
+                { value: '1', label: 'Arşivdekiler' },
+              ]}
+              value={searchParams.arsiv || ''}
+              onChange={(e) => handleFilterChange('arsiv', e.target.value)}
             />
 
             {/* Clear Filters */}

@@ -1,6 +1,9 @@
 import { prisma } from '@/lib/prisma';
 import SuppliersClient from './SuppliersClient';
 
+// Bakiye ve listeler her istekte veritabanından güncel okunur (build anında dondurulmaz)
+export const dynamic = 'force-dynamic';
+
 async function getSuppliersPageData() {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);

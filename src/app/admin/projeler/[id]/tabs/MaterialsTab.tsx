@@ -2,6 +2,7 @@
 
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import MaterialPurchasesTab from '@/app/admin/is-emirleri/[id]/tabs/MaterialPurchasesTab';
 
 interface MaterialsTabProps {
   project: any;
@@ -82,58 +83,8 @@ export default function MaterialsTab({ project, supplierSummary }: MaterialsTabP
         </Card>
       )}
 
-      {/* All Material Purchases */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Malzeme Alımları</h3>
-            <span className="text-sm text-gray-500">{materialPurchases.length} kayıt</span>
-          </div>
-        </CardHeader>
-        <CardBody className="p-0">
-          {materialPurchases.length === 0 ? (
-            <div className="text-center py-12">
-              <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
-              <p className="text-gray-500">Henüz malzeme alımı yok</p>
-              <p className="text-sm text-gray-400 mt-1">Sağ panelden &quot;Malzeme Alımı&quot; ekleyebilirsiniz</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Toptancı</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Miktar</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Birim Fiyat</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Toplam</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {materialPurchases.map((purchase: any) => (
-                    <tr key={purchase.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-900">{formatDate(purchase.purchaseDate)}</td>
-                      <td className="px-6 py-4 font-medium">{purchase.supplier?.name || '-'}</td>
-                      <td className="px-6 py-4">
-                        <p className="text-gray-900">{purchase.material?.name || purchase.materialName || '-'}</p>
-                        {purchase.note && (
-                          <p className="text-xs text-gray-500 mt-1">{purchase.note}</p>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right">{purchase.quantity} {purchase.unit}</td>
-                      <td className="px-6 py-4 text-right text-gray-600">{formatCurrency(purchase.unitPrice)}</td>
-                      <td className="px-6 py-4 text-right font-semibold text-orange-600">{formatCurrency(purchase.totalAmount)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardBody>
-      </Card>
+      {/* Malzeme alımları: ekle / düzenle / sil */}
+      <MaterialPurchasesTab job={project} materialPurchases={materialPurchases} />
     </div>
   );
 }

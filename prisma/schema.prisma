@@ -67,6 +67,10 @@ model BusinessJob {
   guncellemeTarihi DateTime @updatedAt
   kapanisTarihi   DateTime?
 
+  // Arşiv (silmek yerine listelerden gizler, veri korunur)
+  arsivlendi      Boolean   @default(false)
+  arsivTarihi     DateTime?
+
   // Relations
   offers           Offer[]
   contracts        Contract[]
@@ -85,6 +89,7 @@ model BusinessJob {
   @@index([durum])
   @@index([oncelik])
   @@index([olusturmaTarihi])
+  @@index([arsivlendi])
 }
 
 // ========================================

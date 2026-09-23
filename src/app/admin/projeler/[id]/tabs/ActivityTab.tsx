@@ -54,6 +54,12 @@ export default function ActivityTab({ auditLogs }: ActivityTabProps) {
         return 'Güncellendi';
       case 'DELETE':
         return 'Silindi';
+      case 'ARCHIVE':
+        return 'Arşivlendi';
+      case 'UNARCHIVE':
+        return 'Arşivden Çıkarıldı';
+      case 'UPDATE_STATUS':
+        return 'Durum Değişti';
       default:
         return action;
     }

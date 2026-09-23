@@ -13,9 +13,16 @@ import toast from 'react-hot-toast';
 interface BusinessJobFormProps {
   initialData?: any;
   jobId?: string;
+  basePath?: '/admin/is-emirleri' | '/admin/projeler';
+  entityLabel?: string;
 }
 
-export default function BusinessJobForm({ initialData, jobId }: BusinessJobFormProps) {
+export default function BusinessJobForm({
+  initialData,
+  jobId,
+  basePath = '/admin/is-emirleri',
+  entityLabel = 'İş Emri',
+}: BusinessJobFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,8 +66,8 @@ export default function BusinessJobForm({ initialData, jobId }: BusinessJobFormP
         : await createBusinessJob(submitData);
 
       if (result.success) {
-        toast.success(jobId ? 'İş emri güncellendi' : 'İş emri oluşturuldu');
-        router.push('/admin/is-emirleri');
+        toast.success(jobId ? `${entityLabel} güncellendi` : `${entityLabel} oluşturuldu`);
+        router.push(jobId ? `${basePath}/${jobId}` : basePath);
         router.refresh();
       } else {
         toast.error(result.error || 'Bir hata oluştu');
@@ -77,7 +84,7 @@ export default function BusinessJobForm({ initialData, jobId }: BusinessJobFormP
       <Card>
         <CardHeader>
           <h2 className="text-xl font-semibold">
-            {jobId ? 'İş Emrini Düzenle' : 'Yeni İş Emri'}
+            {jobId ? `${entityLabel} Düzenle` : `Yeni ${entityLabel}`}
           </h2>
         </CardHeader>
         <CardBody>
