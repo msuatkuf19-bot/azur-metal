@@ -209,6 +209,27 @@ export default function WorkersClient({ initialData, stats, activeJobs = [] }: W
     }
   };
 
+  // Tablo ve kart görünümünde ortak işlem butonları
+  const renderActions = (w: Worker) => (
+    <>
+      <Button variant="ghost" size="sm" onClick={() => openEditDrawer(w)}>
+        Düzenle
+      </Button>
+      {w.isActive ? (
+        <Button variant="ghost" size="sm" onClick={() => handleDelete(w)}>
+          Pasife Al
+        </Button>
+      ) : (
+        <Button variant="ghost" size="sm" onClick={() => handleActivate(w)}>
+          Aktifleştir
+        </Button>
+      )}
+      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => setDeleteTarget(w)}>
+        Sil
+      </Button>
+    </>
+  );
+
   const columns = [
     {
       key: 'fullName',
@@ -273,21 +294,7 @@ export default function WorkersClient({ initialData, stats, activeJobs = [] }: W
       header: 'İşlemler',
       render: (w: Worker) => (
         <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
-          <Button variant="ghost" size="sm" onClick={() => openEditDrawer(w)}>
-            Düzenle
-          </Button>
-          {w.isActive ? (
-            <Button variant="ghost" size="sm" onClick={() => handleDelete(w)}>
-              Pasife Al
-            </Button>
-          ) : (
-            <Button variant="ghost" size="sm" onClick={() => handleActivate(w)}>
-              Aktifleştir
-            </Button>
-          )}
-          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => setDeleteTarget(w)}>
-            Sil
-          </Button>
+          {renderActions(w)}
         </div>
       ),
     },
@@ -430,6 +437,7 @@ export default function WorkersClient({ initialData, stats, activeJobs = [] }: W
                 balance={w.balance || 0}
                 isActive={w.isActive}
                 onClick={() => router.push(`/admin/tanimlamalar/ustalar/${w.id}`)}
+                actions={renderActions(w)}
               />
             ))}
           </div>

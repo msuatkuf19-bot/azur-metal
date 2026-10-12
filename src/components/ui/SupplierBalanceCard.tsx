@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { formatCurrency, formatPhone, formatDate } from '@/lib/utils';
 import { Badge } from './Badge';
 import { supplierBalanceStatus } from '@/lib/constants';
@@ -12,9 +13,10 @@ interface SupplierBalanceCardProps {
   lastPurchaseDate?: string | null;
   isActive?: boolean;
   onClick?: () => void;
+  actions?: ReactNode;
 }
 
-export function SupplierBalanceCard({ supplier, thisMonthTotal, totalPurchases, openBalance, lastPurchaseDate, isActive = true, onClick }: SupplierBalanceCardProps) {
+export function SupplierBalanceCard({ supplier, thisMonthTotal, totalPurchases, openBalance, lastPurchaseDate, isActive = true, onClick, actions }: SupplierBalanceCardProps) {
   const status = supplierBalanceStatus(openBalance);
 
   return (
@@ -49,6 +51,11 @@ export function SupplierBalanceCard({ supplier, thisMonthTotal, totalPurchases, 
         </div>
       </div>
       {lastPurchaseDate && <p className="text-[11px] text-slate-400 mt-2">Son alım: {formatDate(lastPurchaseDate)}</p>}
+      {actions && (
+        <div className="flex flex-wrap justify-end gap-1 mt-3 pt-3 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
+          {actions}
+        </div>
+      )}
     </div>
   );
 }

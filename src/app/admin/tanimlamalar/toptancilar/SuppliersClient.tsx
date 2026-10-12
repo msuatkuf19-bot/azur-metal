@@ -187,6 +187,30 @@ export default function SuppliersClient({ initialData }: SuppliersClientProps) {
     }
   };
 
+  // Tablo ve kart görünümünde ortak işlem butonları
+  const renderActions = (s: Supplier) => (
+    <>
+      <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/tanimlamalar/toptancilar/${s.id}`)}>
+        Detay
+      </Button>
+      <Button variant="ghost" size="sm" onClick={() => openEditDrawer(s)}>
+        Düzenle
+      </Button>
+      {s.isActive ? (
+        <Button variant="ghost" size="sm" onClick={() => handleDelete(s)}>
+          Pasife Al
+        </Button>
+      ) : (
+        <Button variant="ghost" size="sm" onClick={() => handleActivate(s)}>
+          Aktifleştir
+        </Button>
+      )}
+      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => setDeleteTarget(s)}>
+        Sil
+      </Button>
+    </>
+  );
+
   const columns = [
     {
       key: 'name',
@@ -231,25 +255,8 @@ export default function SuppliersClient({ initialData }: SuppliersClientProps) {
       key: 'actions',
       header: 'İşlemler',
       render: (s: Supplier) => (
-        <div className="flex space-x-2">
-          <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/tanimlamalar/toptancilar/${s.id}`)}>
-            Detay
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => openEditDrawer(s)}>
-            Düzenle
-          </Button>
-          {s.isActive ? (
-            <Button variant="ghost" size="sm" onClick={() => handleDelete(s)}>
-              Pasife Al
-            </Button>
-          ) : (
-            <Button variant="ghost" size="sm" onClick={() => handleActivate(s)}>
-              Aktifleştir
-            </Button>
-          )}
-          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => setDeleteTarget(s)}>
-            Sil
-          </Button>
+        <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
+          {renderActions(s)}
         </div>
       ),
     },
@@ -357,6 +364,7 @@ export default function SuppliersClient({ initialData }: SuppliersClientProps) {
                 lastPurchaseDate={s.lastPurchaseDate}
                 isActive={s.isActive}
                 onClick={() => router.push(`/admin/tanimlamalar/toptancilar/${s.id}`)}
+                actions={renderActions(s)}
               />
             ))}
           </div>

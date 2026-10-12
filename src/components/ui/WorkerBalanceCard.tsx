@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { formatCurrency } from '@/lib/utils';
 import { Badge } from './Badge';
 import { workerBalanceStatus, WORKER_ROLE_LABELS } from '@/lib/constants';
@@ -12,9 +13,10 @@ interface WorkerBalanceCardProps {
   balance: number;
   isActive?: boolean;
   onClick?: () => void;
+  actions?: ReactNode;
 }
 
-export function WorkerBalanceCard({ worker, monthWorkedDays, earned, paid, balance, isActive = true, onClick }: WorkerBalanceCardProps) {
+export function WorkerBalanceCard({ worker, monthWorkedDays, earned, paid, balance, isActive = true, onClick, actions }: WorkerBalanceCardProps) {
   const status = workerBalanceStatus(balance);
   const initials = worker.fullName
     .split(' ')
@@ -57,6 +59,11 @@ export function WorkerBalanceCard({ worker, monthWorkedDays, earned, paid, balan
         </div>
       </div>
       {monthWorkedDays !== undefined && <p className="text-[11px] text-slate-400 mt-2">Bu ay {monthWorkedDays.toLocaleString('tr-TR')} gün çalıştı</p>}
+      {actions && (
+        <div className="flex flex-wrap justify-end gap-1 mt-3 pt-3 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
+          {actions}
+        </div>
+      )}
     </div>
   );
 }

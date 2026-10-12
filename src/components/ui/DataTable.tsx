@@ -136,10 +136,17 @@ export function DataTable<T>({
             <div key={keyExtractor(item)} onClick={() => onRowClick?.(item)} className={`p-4 space-y-1.5 ${onRowClick ? 'active:bg-gray-50' : ''}`}>
               {mobileCardTitle && <div className="font-semibold text-gray-900 mb-1">{mobileCardTitle(item)}</div>}
               {visibleCols.map((col) => (
-                <div key={col.key} className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-gray-500 shrink-0">{col.header}</span>
-                  <span className="text-gray-900 text-right truncate">{col.render ? col.render(item) : (item as any)[col.key]}</span>
-                </div>
+                col.key === 'actions' ? (
+                  // İşlem butonları kırpılmasın diye tam genişlikte, ayrı satırda gösterilir
+                  <div key={col.key} className="flex flex-wrap justify-end pt-2">
+                    {col.render ? col.render(item) : (item as any)[col.key]}
+                  </div>
+                ) : (
+                  <div key={col.key} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-gray-500 shrink-0">{col.header}</span>
+                    <span className="text-gray-900 text-right truncate">{col.render ? col.render(item) : (item as any)[col.key]}</span>
+                  </div>
+                )
               ))}
             </div>
           );
