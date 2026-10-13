@@ -99,12 +99,6 @@ export default function LoginPage() {
               {isLoading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
             </Button>
           </form>
-
-          {/* Footer Info */}
-          <div className="mt-6 text-center text-sm text-gray-500">
-            <p>Varsayılan giriş bilgileri:</p>
-            <p className="mt-1 font-mono">admin / Admin123!</p>
-          </div>
         </div>
 
         {/* Bottom Info */}

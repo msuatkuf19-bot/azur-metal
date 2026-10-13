@@ -68,7 +68,7 @@ npx prisma db seed
 ```
 
 Bu komut:
-- ✅ Admin kullanıcısı oluşturur (admin/Admin123!)
+- ✅ Admin kullanıcısı oluşturur (şifre: `.env` içindeki `ADMIN_SEED_PASSWORD`)
 - ✅ Örnek iş emri ekler
 - ✅ Örnek teklif ekler
 - ✅ Örnek usta ekler
@@ -85,7 +85,7 @@ http://localhost:3000
 
 **Giriş Bilgileri:**
 - Kullanıcı Adı: `admin`
-- Şifre: `Admin123!`
+- Şifre: `.env` içindeki `ADMIN_SEED_PASSWORD`
 
 ## ✅ Kurulum Başarılı!
 

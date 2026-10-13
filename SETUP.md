@@ -63,7 +63,7 @@ Tarayıcınızda: http://localhost:3000
 ### 6. Giriş Yap
 
 - **Kullanıcı Adı:** admin
-- **Şifre:** Admin123!
+- **Şifre:** `.env` içindeki `ADMIN_SEED_PASSWORD`
 
 ## 🎉 Tamamlandı!
 

@@ -610,7 +610,7 @@ async function main() {
   console.log('');
   console.log('📋 Giriş Bilgileri:');
   console.log('   Kullanıcı Adı: admin');
-  console.log('   Şifre: Admin123!');
+  console.log('   Şifre: ADMIN_SEED_PASSWORD (.env)');
 }
 
 main()

@@ -2,7 +2,7 @@
 
 Metal sektörüne özel **iş emri, proje, finans ve operasyon yönetim sistemi**. Teklif aşamasından tahsilata, işçilik yevmiyesinden malzeme alımına kadar bir metal atölyesinin tüm iş akışını tek panelden yönetir.
 
-Varsayılan giriş: `admin` / `Admin123!`
+Giriş bilgileri seed sırasında `.env` içindeki `ADMIN_SEED_PASSWORD` ile belirlenir.
 
 ---
 
