@@ -41,12 +41,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[radial-gradient(ellipse_at_top_right,_#234b7c,_#101d32_70%)] px-4">
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-white rounded-3xl border border-white/50 shadow-2xl p-8 sm:p-10">
           {/* Logo/Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-full mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
               <svg
                 className="w-8 h-8 text-white"
                 fill="none"
@@ -108,7 +108,7 @@ export default function LoginPage() {
         </div>
 
         {/* Bottom Info */}
-        <div className="mt-6 text-center text-sm text-gray-600">
+        <div className="mt-6 text-center text-sm text-slate-400">
           <p>© 2026 Azur Metal. Tüm hakları saklıdır.</p>
         </div>
       </div>

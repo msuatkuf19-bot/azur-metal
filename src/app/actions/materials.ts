@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { writeAuditLog } from '@/lib/audit';
 import { materialSchema, type MaterialInput } from '@/lib/validations';
 
 // Audit log helper
@@ -14,19 +15,13 @@ async function createAuditLog(
   details?: string,
   jobId?: string
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) return;
-
-  await prisma.auditLog.create({
-    data: {
-      userId: (session.user as any).id,
-      action,
-      entityType,
-      entityId,
-      entity: 'Material',
-      details,
-      jobId,
-    },
+  await writeAuditLog({
+    action,
+    entityType,
+    entityId,
+    entity: 'Material',
+    details,
+    jobId,
   });
 }
 

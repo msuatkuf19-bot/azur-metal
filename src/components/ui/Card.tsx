@@ -7,7 +7,7 @@ interface CardProps {
 export function Card({ children, className = '', onClick }: CardProps) {
   return (
     <div 
-      className={`bg-white rounded-lg shadow-md ${className}`}
+      className={`bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_12px_-6px_rgba(15,23,42,0.12)] ${className}`}
       onClick={onClick}
     >
       {children}
@@ -17,7 +17,7 @@ export function Card({ children, className = '', onClick }: CardProps) {
 
 export function CardHeader({ children, className = '' }: CardProps) {
   return (
-    <div className={`px-6 py-4 border-b border-gray-200 ${className}`}>
+    <div className={`px-6 py-4 border-b border-slate-100 ${className}`}>
       {children}
     </div>
   );
@@ -33,7 +33,7 @@ export function CardBody({ children, className = '' }: CardProps) {
 
 export function CardFooter({ children, className = '' }: CardProps) {
   return (
-    <div className={`px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg ${className}`}>
+    <div className={`px-6 py-4 border-t border-slate-100 bg-slate-50/70 rounded-b-2xl ${className}`}>
       {children}
     </div>
   );

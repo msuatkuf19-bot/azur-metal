@@ -35,7 +35,7 @@ export function StatCard({ title, value, sub, icon, trend, accent = 'default', h
   const clickable = !!(href || onClick);
   const content = (
     <div
-      className={`bg-white rounded-2xl border border-slate-200 shadow-sm border-l-4 ${ACCENT_BORDER[accent]} p-4 transition-all ${
+      className={`bg-white rounded-2xl border border-slate-200 shadow-[0_2px_12px_-6px_rgba(15,23,42,0.12)] border-l-4 ${ACCENT_BORDER[accent]} p-5 transition-all ${
         clickable ? 'hover:shadow-md hover:-translate-y-0.5 cursor-pointer' : ''
       } ${className}`}
       onClick={onClick}
@@ -43,8 +43,8 @@ export function StatCard({ title, value, sub, icon, trend, accent = 'default', h
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-slate-500 truncate">{title}</p>
-          <p className="text-2xl font-bold text-slate-900 mt-1 truncate">{value}</p>
-          {sub && <p className="text-xs text-slate-400 mt-0.5 truncate">{sub}</p>}
+          <p className="text-2xl font-bold tracking-tight tabular-nums text-slate-900 mt-2 break-words">{value}</p>
+          {sub && <p className="text-xs text-slate-500 mt-0.5 truncate">{sub}</p>}
           {trend && (
             <p className={`text-xs mt-1 font-medium ${trend.value > 0 ? 'text-success-600' : trend.value < 0 ? 'text-danger-600' : 'text-slate-400'}`}>
               {trend.value > 0 ? '↑' : trend.value < 0 ? '↓' : '–'} %{Math.abs(trend.value).toLocaleString('tr-TR')} {trend.label || ''}

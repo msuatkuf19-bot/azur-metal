@@ -51,7 +51,7 @@ export function PageHeader({ title, subtitle, badges, backHref, avatar, actions,
               ))}
             </nav>
           )}
-          <h1 className="text-2xl font-bold text-slate-900 truncate">{title}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 break-words">{title}</h1>
           <div className="flex items-center flex-wrap gap-2 mt-1">
             {subtitle && <span className="text-sm text-slate-500">{subtitle}</span>}
             {badges}

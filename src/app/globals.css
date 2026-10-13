@@ -1,38 +1,18 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 249, 250, 251;
-  --background-end-rgb: 255, 255, 255;
+@layer base {
+ body { @apply bg-[#f4f6fa] text-slate-800 antialiased; }
+ ::selection { @apply bg-blue-100 text-blue-900; }
+ :focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
+ input, select, textarea { color-scheme: light; }
 }
-
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
-}
-
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
+.app-shell { background: #f4f6fa; }
+.dashboard-welcome { padding: clamp(24px, 3vw, 36px); border-radius: 24px; background: radial-gradient(ellipse at 95% 0%, #285d98 0%, transparent 55%), linear-gradient(115deg, #13243e, #1c3d66); box-shadow: 0 8px 24px -14px #13243e; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c3cddd; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+@media (prefers-reduced-motion: reduce) {
+ *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }

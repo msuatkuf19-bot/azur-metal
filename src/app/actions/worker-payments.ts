@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { writeAuditLog } from '@/lib/audit';
 import { workerPaymentSchema, type WorkerPaymentInput } from '@/lib/validations';
 import { WORKER_PAYMENT_TYPE_LABELS } from '@/lib/constants';
 
@@ -20,16 +21,13 @@ async function createAuditLog(
   details?: string,
   jobId?: string | null
 ) {
-  await prisma.auditLog.create({
-    data: {
-      userId,
-      action,
-      entityType: 'WorkerPayment',
-      entityId,
-      entity: 'WorkerPayment',
-      details,
-      jobId: jobId || undefined,
-    },
+  await writeAuditLog({
+    action,
+    entityType: 'WorkerPayment',
+    entityId,
+    entity: 'WorkerPayment',
+    details,
+    jobId: jobId || undefined,
   });
 }
 

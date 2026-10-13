@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { writeAuditLog } from '@/lib/audit';
 import { settlementPeriodSchema, type SettlementPeriodInput } from '@/lib/validations';
 import { getWorkerAccount } from '@/lib/worker-account';
 
@@ -14,15 +15,12 @@ async function requireSession() {
 }
 
 async function createAuditLog(userId: string, action: string, entityId?: string, details?: string) {
-  await prisma.auditLog.create({
-    data: {
-      userId,
-      action,
-      entityType: 'WorkerSettlementPeriod',
-      entityId,
-      entity: 'WorkerSettlementPeriod',
-      details,
-    },
+  await writeAuditLog({
+    action,
+    entityType: 'WorkerSettlementPeriod',
+    entityId,
+    entity: 'WorkerSettlementPeriod',
+    details,
   });
 }
 

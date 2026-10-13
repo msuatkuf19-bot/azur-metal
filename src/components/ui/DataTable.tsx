@@ -74,7 +74,7 @@ export function DataTable<T>({
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="animate-pulse">
           <div className="h-12 bg-gray-100 border-b" />
           {[1, 2, 3, 4, 5].map((i) => (
@@ -87,14 +87,14 @@ export function DataTable<T>({
 
   if (data.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm">
         <EmptyState title={emptyMessage} />
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
       {/* Desktop table */}
       <div className="hidden md:block overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">

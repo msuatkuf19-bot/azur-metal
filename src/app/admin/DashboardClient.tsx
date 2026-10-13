@@ -72,10 +72,10 @@ function greeting() {
 function MiniBarChart({ data }: { data: { label: string; income: number; expense: number }[] }) {
   const max = Math.max(1, ...data.flatMap((d) => [d.income, d.expense]));
   return (
-    <div className="flex items-end justify-between gap-3 h-40 px-2">
+    <div className="flex items-end justify-between gap-3 h-48 px-2">
       {data.map((d) => (
         <div key={d.label} className="flex-1 flex flex-col items-center gap-1">
-          <div className="w-full flex items-end justify-center gap-1 h-32">
+          <div className="w-full flex items-end justify-center gap-1.5 h-40">
             <div className="w-1/2 bg-success-400 rounded-t" style={{ height: `${(d.income / max) * 100}%` }} title={formatCurrency(d.income)} />
             <div className="w-1/2 bg-danger-400 rounded-t" style={{ height: `${(d.expense / max) * 100}%` }} title={formatCurrency(d.expense)} />
           </div>
@@ -112,12 +112,12 @@ export default function DashboardClient({ data, userName }: DashboardClientProps
   return (
     <div className="space-y-6">
       {/* Welcome */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="dashboard-welcome flex flex-col md:flex-row md:items-center md:justify-between gap-5">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
             {greeting()}, {userName}
           </h1>
-          <p className="text-slate-500 mt-1 capitalize">{todayLabel}</p>
+          <p className="text-blue-100/80 mt-2 capitalize">{todayLabel}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href="/admin/is-emirleri/yeni">
@@ -129,6 +129,21 @@ export default function DashboardClient({ data, userName }: DashboardClientProps
             </Button>
           </Link>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { href: '/admin/is-emirleri', title: 'İş emirleri', text: 'İşlerin durumunu takip edin', icon: ICONS.jobs },
+          { href: '/admin/yoklama', title: 'Günlük yoklama', text: 'Personel katılımını yönetin', icon: ICONS.worker },
+          { href: '/admin/personel-odemeleri', title: 'Personel ödemeleri', text: 'Bakiyeleri ve ödemeleri görün', icon: ICONS.income },
+          { href: '/admin/malzeme-alimlari', title: 'Malzeme alımları', text: 'Tedarik işlemlerine ulaşın', icon: ICONS.supplier },
+        ].map((item) => (
+          <Link key={item.href} href={item.href} className="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-blue-300 hover:shadow-sm">
+            <span className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">{item.icon}</span>
+            <div className="min-w-0"><p className="text-sm font-semibold text-slate-800 group-hover:text-blue-600">{item.title}</p><p className="mt-1 text-xs text-slate-500">{item.text}</p></div>
+            <span className="ml-auto text-slate-400 group-hover:text-blue-600" aria-hidden="true">&nearr;</span>
+          </Link>
+        ))}
       </div>
 
       {/* KPI Cards */}

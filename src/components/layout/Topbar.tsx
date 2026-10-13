@@ -93,7 +93,7 @@ export function Topbar({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) {
   };
 
   return (
-    <header className="sticky top-0 z-20 bg-white border-b border-slate-200 h-16 flex items-center gap-3 px-4 lg:px-6">
+    <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-xl border-b border-slate-200/70 h-20 flex items-center gap-4 px-4 lg:px-8">
       <button onClick={onOpenMobileMenu} className="lg:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg" aria-label="Menüyü aç">
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -114,7 +114,7 @@ export function Topbar({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) {
         </nav>
       </div>
 
-      <div className="flex-1 min-w-0 sm:max-w-md">
+      <div className="flex-1 min-w-0 sm:max-w-md sm:ml-auto">
         <GlobalSearch />
       </div>
 
@@ -122,7 +122,7 @@ export function Topbar({ onOpenMobileMenu }: { onOpenMobileMenu: () => void }) {
         <div className="relative" ref={quickAddRef}>
           <button
             onClick={() => setQuickAddOpen((v) => !v)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-xl shadow-sm shadow-blue-600/20 hover:bg-blue-700 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { writeAuditLog } from '@/lib/audit';
 import { attendanceSchema, bulkAttendanceSchema, type AttendanceInput, type BulkAttendanceInput } from '@/lib/validations';
 import { ATTENDANCE_TYPE_LABELS, ATTENDANCE_TYPE_MULTIPLIERS, type AttendanceType } from '@/lib/constants';
 
@@ -19,15 +20,12 @@ async function createAuditLog(
   entityId?: string,
   details?: string
 ) {
-  await prisma.auditLog.create({
-    data: {
-      userId,
-      action,
-      entityType: 'Attendance',
-      entityId,
-      entity: 'Attendance',
-      details,
-    },
+  await writeAuditLog({
+    action,
+    entityType: 'Attendance',
+    entityId,
+    entity: 'Attendance',
+    details,
   });
 }
 
